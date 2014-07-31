@@ -1,0 +1,6 @@
+https://www.djangoproject.com/download/1.7c2/tarball/
+backports.ssl-match-hostname==3.4.0.2
+certifi==14.05.14
+simplejson==3.6.0
+tornado==4.0
+wsgiref==0.1.2
