@@ -11,11 +11,14 @@ import xml.etree.ElementTree as ET
 ICBIT_URL_TEMPLATE = 'https://api.icbit.se/api/orders/book?ticker=%s'
 KORBIT_URL = 'https://api.korbit.co.kr/v1/orderbook'
 BITSTAMP_URL = 'https://www.bitstamp.net/api/order_book/'
-CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=%s&ToCurrency=%s'
+CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
+                            'ConversionRate?FromCurrency=%s&ToCurrency=%s'
 
 def get_quote(url):
     req = urllib2.Request(url)
-    req.add_unredirected_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.64 Safari/537.31')
+    req.add_unredirected_header('User-Agent',
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.31 (KHTML, ' \
+            'like Gecko) Chrome/26.0.1410.64 Safari/537.31')
     source = urllib2.urlopen(req).read()
     return source
 
@@ -31,8 +34,8 @@ def parse_currency_value(content):
 def insert_into_db(con, datetime, code, value):
     with con:
         cur = con.cursor()
-        query = "INSERT INTO quote(dt, code, value) VALUES ('%s', '%s', '%s')" % (datetime, code, value)
-        #print query
+        query = "INSERT INTO quote(dt, code, value) VALUES ('%s', '%s', '%s')"\
+                % (datetime, code, value)
         cur.execute(query)
 
 def main():
