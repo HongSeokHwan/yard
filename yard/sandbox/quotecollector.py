@@ -14,6 +14,12 @@ BITSTAMP_URL = 'https://www.bitstamp.net/api/order_book/'
 CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
                             'ConversionRate?FromCurrency=%s&ToCurrency=%s'
 
+ICBIT_CODE_1409 = 'BUU4'
+ICBIT_CODE_1412 = 'BUZ4'
+KORBIT_CODE = 'KORBIT'
+BITSTAMP_CODE = 'BITSTAMP'
+USDKRW = 'USDKRW'
+
 def get_quote(url):
     req = urllib2.Request(url)
     req.add_unredirected_header('User-Agent',
@@ -38,15 +44,8 @@ def insert_into_db(con, datetime, code, value):
                 % (datetime, code, value)
         cur.execute(query)
 
-def main():
-    ICBIT_CODE_1409 = 'BUU4'
-    ICBIT_CODE_1412 = 'BUZ4'
-    KORBIT_CODE = 'KORBIT'
-    BITSTAMP_CODE = 'BITSTAMP'
-    USDKRW = 'USDKRW'
-
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
-    while True:
+def _main(con):
+    try:
         print 'start get quote'
 
         icbit_quote_1409 = get_quote(ICBIT_URL_TEMPLATE % ICBIT_CODE_1409)
@@ -67,6 +66,14 @@ def main():
 
         print 'end get quote and insert into db.', now
         time.sleep(30)
+    except:
+        pass
+
+def main():
+
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+    while True:
+        _main(con)
 
 if __name__ == '__main__':
     main()
