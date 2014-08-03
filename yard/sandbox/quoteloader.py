@@ -3,10 +3,10 @@
 
 import MySQLdb as mdb
 import json
-import csv
 
 ICBIT_CODE_1412 = 'BUZ4'
 ICBIT_CODE_1409 = 'BUU4'
+
 
 class UsdKrxConverter:
     def __init__(self):
@@ -15,6 +15,7 @@ class UsdKrxConverter:
     def set_data(self, rows):
         for row in rows:
             self.data.append(float(row['value']))
+
 
 class SimpleQuote:
     def __init__(self):
@@ -29,11 +30,11 @@ class SimpleQuote:
     def parse_icbit(self, raw_string):
         try:
             j = json.loads(raw_string)
-            #print j
-            #print j['asks'][1][0]
-            #print j['asks'][0][0]
-            #print j['bids'][0][0]
-            #print j['bids'][1][0]
+            # print j
+            # print j['asks'][1][0]
+            # print j['asks'][0][0]
+            # print j['bids'][0][0]
+            # print j['bids'][1][0]
 
             self.bid_price1 = float(j['buy'][0]['p'])
             self.bid_quantity1 = float(j['buy'][0]['q'])
@@ -44,7 +45,6 @@ class SimpleQuote:
             self.spread = self.ask_price1 - self.bid_price1
             self.spread_rate = (self.ask_price1 / self.bid_price1) - 1
             self.mid_price = (self.ask_price1 + self.bid_price1) / 2
-            #print self.ask_price1, self.bid_price1, self.mid_price, self.spread
             return True
         except Exception, e:
             print str(e)
@@ -53,11 +53,10 @@ class SimpleQuote:
     def parse_korbit(self, raw_string):
         try:
             j = json.loads(raw_string)
-            #print j['asks'][1][0]
-            #print j['asks'][0][0]
-            #print j['bids'][0][0]
-            #print j['bids'][1][0]
-
+            # print j['asks'][1][0]
+            # print j['asks'][0][0]
+            # print j['bids'][0][0]
+            # print j['bids'][1][0]
 
             self.bid_price1 = float(j['bids'][0][0])
             self.bid_quantity1 = float(j['bids'][0][1])
@@ -68,7 +67,6 @@ class SimpleQuote:
             self.spread = self.ask_price1 - self.bid_price1
             self.spread_rate = (self.ask_price1 / self.bid_price1) - 1
             self.mid_price = (self.ask_price1 + self.bid_price1) / 2
-            #print self.ask_price1, self.bid_price1, self.mid_price, self.spread
             return True
         except Exception, e:
             print str(e)
@@ -86,21 +84,19 @@ class SimpleQuote:
             self.spread = (self.ask_price1 / self.bid_price1) - 1
             self.mid_price = (self.ask_price1 + self.bid_price1) / 2
 
-            #print self.mid_price, self.spread
+            # print self.mid_price, self.spread
 
             return True
         except Exception, e:
             print str(e)
             return False
 
+
 def get_usdkrx_data(start_date, end_date):
     CODE = 'USDKRW'
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     query_template = "select * from quote where code = '%s' "\
-            "and dt >= '%s' and dt <= '%s'"
-    query = query_template % (CODE, start_date, end_date)
-
-    quotes = []
+        "and dt >= '%s' and dt <= '%s'"
 
     with con:
         cur = con.cursor(mdb.cursors.DictCursor)
@@ -110,12 +106,12 @@ def get_usdkrx_data(start_date, end_date):
         converter.set_data(rows)
         return converter
 
+
 def get_korbit_data(start_date, end_date):
     CODE = 'KORBIT'
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     query_template = "select * from quote where code = '%s' "\
-            "and dt >= '%s' and dt <= '%s'"
-    query = query_template % (CODE, start_date, end_date)
+        "and dt >= '%s' and dt <= '%s'"
 
     quotes = []
 
@@ -132,12 +128,12 @@ def get_korbit_data(start_date, end_date):
                 return None
     return quotes
 
+
 def get_bitstamp_data(start_date, end_date):
     CODE = 'BITSTAMP'
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     query_template = "select * from quote where code = '%s' "\
-            "and dt >= '%s' and dt <= '%s'"
-    query = query_template % (CODE, start_date, end_date)
+        "and dt >= '%s' and dt <= '%s'"
 
     quotes = []
 
@@ -154,12 +150,12 @@ def get_bitstamp_data(start_date, end_date):
                 return None
     return quotes
 
+
 def get_icbit_data(code, start_date, end_date):
     CODE = code
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     query_template = "select * from quote where code = '%s' "\
-            "and dt >= '%s' and dt <= '%s'"
-    query = query_template % (CODE, start_date, end_date)
+        "and dt >= '%s' and dt <= '%s'"
 
     quotes = []
 
@@ -183,11 +179,13 @@ def get_mid_prices(simple_quotes):
         quotes.append(simple_quote.mid_price)
     return quotes
 
+
 def get_spreads(simple_quotes):
     quotes = []
     for simple_quote in simple_quotes:
         quotes.append(simple_quote.spread)
     return quotes
+
 
 def get_krxbase_data(usdbase_data, currency):
     krxbase_data = []
@@ -197,6 +195,7 @@ def get_krxbase_data(usdbase_data, currency):
         i += 1
     return krxbase_data
 
+
 def get_diffs(a, b):
     diffs = []
     i = 0
@@ -205,13 +204,15 @@ def get_diffs(a, b):
         diffs.append(diff)
     return diffs
 
+
 def get_rate_percents(a, b):
     rets = []
     i = 0
     for row in a:
         ret = row * 100 / b[i]
         rets.append(ret)
-    return rets 
+    return rets
+
 
 def get_rates(a, b):
     rets = []
@@ -219,7 +220,8 @@ def get_rates(a, b):
     for row in a:
         ret = row / b[i]
         rets.append(ret)
-    return rets 
+    return rets
+
 
 def main():
     start = '2014-08-01'
@@ -228,18 +230,18 @@ def main():
 
     bitstamp_quotes = get_bitstamp_data(start, end)
     bitstamp_mids = get_mid_prices(bitstamp_quotes)
-    bitstamp_krxbase_mids = get_krxbase_data(bitstamp_mids, \
-            usdkrx_converter.data)
+    bitstamp_krxbase_mids = get_krxbase_data(bitstamp_mids,
+                                             usdkrx_converter.data)
 
     icbit12_quotes = get_icbit_data(ICBIT_CODE_1412, start, end)
     icbit12_mids = get_mid_prices(icbit12_quotes)
-    icbit12_krxbase_mids = get_krxbase_data(icbit12_mids, \
-            usdkrx_converter.data)
+    icbit12_krxbase_mids = get_krxbase_data(icbit12_mids,
+                                            usdkrx_converter.data)
 
     icbit09_quotes = get_icbit_data(ICBIT_CODE_1409, start, end)
     icbit09_mids = get_mid_prices(icbit09_quotes)
-    icbit09_krxbase_mids = get_krxbase_data(icbit09_mids, \
-            usdkrx_converter.data)
+    icbit09_krxbase_mids = get_krxbase_data(icbit09_mids,
+                                            usdkrx_converter.data)
 
     korbit_quotes = get_korbit_data(start, end)
     korbit_mids = get_mid_prices(korbit_quotes)
@@ -255,7 +257,6 @@ def main():
         for row in rates:
             fd.write(str(row))
             fd.write('\n')
-    
 
     #diffs = get_diffs(bitstamp_krxbase_mids, korbit_mids)
     #rate_percents = get_rate_percents(diffs, korbit_mids)
@@ -268,4 +269,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

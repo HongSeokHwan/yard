@@ -12,7 +12,7 @@ ICBIT_URL_TEMPLATE = 'https://api.icbit.se/api/orders/book?ticker=%s'
 KORBIT_URL = 'https://api.korbit.co.kr/v1/orderbook'
 BITSTAMP_URL = 'https://www.bitstamp.net/api/order_book/'
 CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
-                            'ConversionRate?FromCurrency=%s&ToCurrency=%s'
+    'ConversionRate?FromCurrency=%s&ToCurrency=%s'
 
 ICBIT_CODE_1409 = 'BUU4'
 ICBIT_CODE_1412 = 'BUZ4'
@@ -20,17 +20,20 @@ KORBIT_CODE = 'KORBIT'
 BITSTAMP_CODE = 'BITSTAMP'
 USDKRW = 'USDKRW'
 
+
 def get_quote(url):
     req = urllib2.Request(url)
-    req.add_unredirected_header('User-Agent',
-            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.31 (KHTML, ' \
-            'like Gecko) Chrome/26.0.1410.64 Safari/537.31')
+    req.add_unredirected_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; '
+                                'WOW64) AppleWebKit/537.31 (KHTML, '
+                                'like Gecko) Chrome/26.0.1410.64 Safari/537.31')
     source = urllib2.urlopen(req).read()
     return source
+
 
 def get_currency(from_currency, to_currency):
     url = CURRENCY_URL_TEMPLATE % (from_currency, to_currency)
     return get_quote(url)
+
 
 def parse_currency_value(content):
     root = ET.fromstring(content)
@@ -43,6 +46,7 @@ def insert_into_db(con, datetime, code, value):
         query = "INSERT INTO quote(dt, code, value) VALUES ('%s', '%s', '%s')"\
                 % (datetime, code, value)
         cur.execute(query)
+
 
 def _main(con):
     try:
@@ -69,12 +73,11 @@ def _main(con):
     except:
         pass
 
-def main():
 
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+def main():
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     while True:
         _main(con)
 
 if __name__ == '__main__':
     main()
-
