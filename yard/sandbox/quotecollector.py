@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import json
 import datetime
 import urllib2
 import MySQLdb as mdb
@@ -19,6 +20,90 @@ ICBIT_CODE_1412 = 'BUZ4'
 KORBIT_CODE = 'KORBIT'
 BITSTAMP_CODE = 'BITSTAMP'
 USDKRW = 'USDKRW'
+
+
+class Quote:
+    def __init__(self):
+        self.code = ''
+        self.bid_prices = []
+        self.ask_prices = []
+
+        self.bid_quantities = []
+        self.ask_quantities = []
+
+    def bitstamp_to_quote(self, bitstamp_quote):
+        self.code = BITSTAMP_CODE
+        try:
+            j = json.loads(bitstamp_quote)
+            i = 0
+            while True:
+                if i >= 10:
+                    break
+
+                self.bid_prices[i] = float(j['bids'][i][0])
+                self.bid_quantities[i] = float(j['bids'][i][1])
+                self.ask_prices[i] = float(j['asks'][i][0])
+                self.ask_quantities[i] = float(j['asks'][i][1])
+
+                i += 1
+            return True
+
+        except Exception, e:
+            print str(e)
+            return False
+
+    def korbit_to_quote(self, korbit_quote):
+        self.code = KORBIT_CODE
+        try:
+            j = json.loads(korbit_quote)
+            i = 0
+            while True:
+                if i >= 10:
+                    break
+
+                self.bid_prices[i] = float(j['bids'][i][0])
+                self.bid_quantities[i] = float(j['bids'][i][1])
+                self.ask_prices[i] = float(j['asks'][i][0])
+                self.ask_quantities[i] = float(j['asks'][i][1])
+
+                i += 1
+            return True
+
+        except Exception, e:
+            print str(e)
+            return False
+
+    def icbit_to_quote(self, code, icbit_quote):
+        self.code = code
+        try:
+            j = json.loads(icbit_quote)
+
+            i = 0
+            while True:
+                if i >= 10:
+                    break
+
+                self.bid_prices[i] = float(j['buy'][i]['p'])
+                self.bid_quantities[i] = float(j['buy'][i]['q'])
+
+                self.ask_prices[i] = float(j['ask'][i]['p'])
+                self.ask_quantities[i] = float(j['ask'][i]['q'])
+
+                i += 1
+            return True
+
+        except Exception, e:
+            print str(e)
+            return False
+
+    def to_database(self, con, dt):
+        # TODO change query statement
+        with con:
+            cur = con.cursor()
+            query = "INSERT INTO quote(dt, code, value) VALUES ("
+            "'%s', '%s', '%s')" % (datetime, self.code, '')
+            cur.execute(query)
+        pass
 
 
 def get_quote(url):
