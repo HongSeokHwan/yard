@@ -225,7 +225,9 @@ def get_rates(a, b):
 
 def main():
     start = '2014-08-01'
-    end = '2014-08-31'
+    end = '2014-08-02'
+
+    print 'start get data from db'
     usdkrx_converter = get_usdkrx_data(start, end)
 
     bitstamp_quotes = get_bitstamp_data(start, end)
@@ -247,8 +249,13 @@ def main():
     korbit_mids = get_mid_prices(korbit_quotes)
     korbit_spreads = get_spreads(korbit_quotes)
 
-    rates = get_rates(icbit12_krxbase_mids, korbit_mids)
+    #rates = get_rates(icbit12_krxbase_mids, korbit_mids)
     #rates = get_rates(icbit12_krxbase_mids, icbit09_krxbase_mids)
+    #rates = get_rates(bitstamp_krxbase_mids, korbit_mids)
+
+    diffs = get_diffs(bitstamp_krxbase_mids, korbit_mids)
+    #rate_percents = get_rate_percents(diffs, korbit_mids)
+    rates = get_rates(diffs, korbit_spreads)
 
     #print rates
 
