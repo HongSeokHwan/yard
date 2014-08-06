@@ -17,10 +17,6 @@ from yard.utils.meta import SingletonMixin
 
 _loop = tornado.ioloop.IOLoop.instance()
 
-def delay(seconds, callback):
-    """Friendly shortcut for IOLoop's add_timeout method."""
-    _loop.add_timeout(datetime.timedelta(seconds=seconds), callback)
-
 
 # Exchange
 # --------
@@ -231,8 +227,9 @@ class ExchangeManager(LoggableMixin, SingletonMixin):
             self._subscribers[exchange].add(session)
 
     def unsubscribe(self, session):
-        for _, subscribers in self._subscribers.iteritems():
+        for exchange, subscribers in self._subscribers.iteritems():
             if session in subscribers:
+                self.debug('Unsubscribing {0}'.format(exchange))
                 subscribers.remove(session)
 
     def _ensure_exchange(self, exchange):
