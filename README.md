@@ -43,7 +43,7 @@ cp yard/local_settings.py.template yard/local_settings.py
 
 ## Todo
 
-### Bridge
+### Exchange
 
 - Handle various exceptional cases
 - Add ICBIT, Fx (trade tick only) exchanges to bridge server
@@ -52,3 +52,4 @@ cp yard/local_settings.py.template yard/local_settings.py
 - Create a simple webpage for viewing real-time quote / trade
 
 ### Trading
+- Prototype
