@@ -36,7 +36,7 @@ def dataframe_from_db(con, code, start_date, end_date):
 
 def main():
     START_DATE = '2014-08-01'
-    END_DATE = '2014-08-05'
+    END_DATE = '2014-08-06'
 
     con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
     korbit_df = dataframe_from_db(con, KORBIT_CODE, START_DATE, END_DATE)
@@ -44,13 +44,15 @@ def main():
     bitstamp_df = dataframe_from_db(con, BITSTAMP_CODE, START_DATE, END_DATE)
     usdkrw_df = dataframe_from_db(con, USDKRW, START_DATE, END_DATE)
 
-    print 'start merge.'
+    print 'start join.'
 
     joined_df = korbit_df.join(bitstamp_df, how='inner')
     joined_df = joined_df.join(usdkrw_df, how='inner')
     #print joined_df.columns
     #print joined_df.index
-    print joined_df
+    #print joined_df
+    joined_df.to_csv('dataframe.csv')
+    print 'after to csv.'
 
 
 if __name__ == '__main__':
