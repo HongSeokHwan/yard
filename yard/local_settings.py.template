@@ -65,7 +65,7 @@ LOGGING = {
         'yard': {
             'handlers':['console'],
             'level': 'DEBUG',
-            'propagate': True,
+            'propagate': False,
         }
     }
 }

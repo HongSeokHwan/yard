@@ -160,8 +160,8 @@ EMAIL_DELIMITER = '=====yard====='
 # Port
 # ----
 
+BRIDGE_SERVER_HOST = 'localhost'
 BRIDGE_SERVER_PORT = 9000
-
 
 
 # Local settings
