@@ -17,13 +17,16 @@ USDKRW = 'USDKRW'
 USDCNY = 'USDCNY'
 KRWCNY = 'KRWCNY'
 
+COLUMN_ALL = '*'
+COLUMN_SIMPLE = 'dt, code, bid_price1, ask_price1'
 
-def dataframe_from_db(con, code, start_date, end_date):
-    query_template = "select * from detail_quotes where code = '%s' "\
+
+def dataframe_from_db(con, code, column, start_date, end_date):
+    query_template = "select %s from detail_quotes where code = '%s' "\
         "and dt >= '%s' and dt <= '%s'"
 
     with con:
-        query = query_template % (code, start_date, end_date)
+        query = query_template % (column, code, start_date, end_date)
         df = psql.frame_query(query, con)
         df.set_index(['dt'], inplace=True)
         df.rename(columns=lambda x: '%s_%s' % (code, x), inplace=True)
@@ -38,11 +41,14 @@ def main():
     START_DATE = '2014-08-01'
     END_DATE = '2014-08-06'
 
-    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
-    korbit_df = dataframe_from_db(con, KORBIT_CODE, START_DATE, END_DATE)
+    col = COLUMN_SIMPLE
 
-    bitstamp_df = dataframe_from_db(con, BITSTAMP_CODE, START_DATE, END_DATE)
-    usdkrw_df = dataframe_from_db(con, USDKRW, START_DATE, END_DATE)
+    con = mdb.connect('localhost', 'root', 'baadf00d', 'yard')
+    korbit_df = dataframe_from_db(con, KORBIT_CODE, col, START_DATE, END_DATE)
+
+    bitstamp_df = dataframe_from_db(
+            con, BITSTAMP_CODE, col, START_DATE, END_DATE)
+    usdkrw_df = dataframe_from_db(con, USDKRW, col, START_DATE, END_DATE)
 
     print 'start join.'
 
