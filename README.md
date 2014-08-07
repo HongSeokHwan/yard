@@ -46,7 +46,7 @@ cp yard/local_settings.py.template yard/local_settings.py
 ### Exchange
 
 - Handle various exceptional cases
-- Add ICBIT, Fx (trade tick only) exchanges to bridge server
+- Add ICBIT exchange to bridge server
 - Draft ORM for history data and implement collector
 - Add order-related interface
 - Create a simple webpage for viewing real-time quote / trade

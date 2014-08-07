@@ -9,6 +9,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 import websocket
+import xmltodict
 
 from yard.utils.ds import is_equal, pick
 from yard.utils.log import LoggableMixin
@@ -21,11 +22,12 @@ _loop = tornado.ioloop.IOLoop.instance()
 # Exchange
 # --------
 
-class AbstractExchange(object):
+class AbstractExchange(LoggableMixin):
     exchange_code = None
     currency = None
 
     def __init__(self):
+        super(AbstractExchange, self).__init__()
         self._subscribers = set()
         self._started = False
 
@@ -51,6 +53,12 @@ class AbstractExchange(object):
     def normalize_trade(self, tick):
         return tick
 
+    def load_message(self, text):
+        return json.loads(text)
+
+    def dump_message(self, message):
+        return json.dumps(message)
+
 
 class WebsocketMixin(object):
     websocket_url = None
@@ -59,7 +67,7 @@ class WebsocketMixin(object):
         super(WebsocketMixin, self).__init__(*args, **kwargs)
         self.connection = None
 
-    @gen.coroutine
+    @gen.engine
     def start(self):
         super(WebsocketMixin, self).start()
 
@@ -70,7 +78,7 @@ class WebsocketMixin(object):
 
         while True:
             raw = yield self.connection.read_message()
-            message = json.loads(raw)
+            message = self.load_message(raw)
 
             self.on_message(message)
 
@@ -93,18 +101,22 @@ class PollingMixin(object):
         self._last_trade = None
 
     def start(self):
-        for _ in range(self.quote_poll_concurrency):
-            self.poll_quote()
-        for _ in range(self.trade_poll_concurrency):
-            self.poll_trade()
         super(PollingMixin, self).start()
 
-    @gen.coroutine
+        if self.quote_poll_url:
+            for _ in range(self.quote_poll_concurrency):
+                self.poll_quote()
+        if self.trade_poll_url:
+            for _ in range(self.trade_poll_concurrency):
+                self.poll_trade()
+
+    @gen.engine
     def poll_quote(self):
         client = SimpleAsyncHTTPClient()
         while True:
+            self.debug('Polling quote')
             response = yield client.fetch(self.quote_poll_url)
-            tick = json.loads(response.body)
+            tick = self.load_message(response.body)
             quote = self.normalize_quote(tick)
             if not quote:
                 continue
@@ -114,12 +126,13 @@ class PollingMixin(object):
                 if not first:
                     self.publish('quote', quote)
 
-    @gen.coroutine
+    @gen.engine
     def poll_trade(self):
         client = SimpleAsyncHTTPClient()
         while True:
+            self.debug('Polling trade')
             response = yield client.fetch(self.trade_poll_url)
-            tick = json.loads(response.body)
+            tick = self.load_message(response.body)
             trade = self.normalize_trade(tick)
             if not trade:
                 continue
@@ -128,6 +141,11 @@ class PollingMixin(object):
                 self._last_trade = trade
                 if not first:
                     self.publish('trade', trade)
+
+
+class XMLMixin(object):
+    def load_message(self, text):
+        return xmltodict.parse(text)
 
 
 class KorbitExchange(PollingMixin, AbstractExchange):
@@ -163,7 +181,7 @@ class BitstampExchange(WebsocketMixin, AbstractExchange):
 
     def on_connect(self):
         for channel in self.channels:
-            self.connection.write_message(json.dumps({
+            self.connection.write_message(self.dump_message({
                 'event': 'pusher:subscribe',
                 'data': {'channel': channel},
             }))
@@ -196,6 +214,21 @@ class BitstampExchange(WebsocketMixin, AbstractExchange):
         }
 
 
+class UsdToKrwExchange(XMLMixin, PollingMixin, AbstractExchange):
+    exchange_code = 'usdkrw'
+    currency = 'krw'
+    trade_poll_concurrency = 2
+    trade_poll_url = ('http://www.webservicex.net/CurrencyConvertor.asmx/'
+                      'ConversionRate?FromCurrency=USD&ToCurrency=KRW')
+
+    def normalize_trade(self, tick):
+        if not tick:
+            return None
+        return {
+            'price': tick['double']['#text'],
+        }
+
+
 # Manager
 # -------
 
@@ -203,6 +236,7 @@ class ExchangeManager(LoggableMixin, SingletonMixin):
     exchange_classes = dict([(class_.exchange_code, class_) for class_ in (
         KorbitExchange,
         BitstampExchange,
+        UsdToKrwExchange,
     )])
 
     def __init__(self):
@@ -222,14 +256,14 @@ class ExchangeManager(LoggableMixin, SingletonMixin):
                      exchange if isinstance(exchange, (list, tuple)) else
                      [exchange])
         for exchange in exchanges:
-            self.debug('Subscribing {0}'.format(exchange))
+            self.info('Subscribing {0}'.format(exchange))
             self._ensure_exchange(exchange)
             self._subscribers[exchange].add(session)
 
     def unsubscribe(self, session):
         for exchange, subscribers in self._subscribers.iteritems():
             if session in subscribers:
-                self.debug('Unsubscribing {0}'.format(exchange))
+                self.info('Unsubscribing {0}'.format(exchange))
                 subscribers.remove(session)
 
     def _ensure_exchange(self, exchange):
@@ -242,7 +276,7 @@ class ExchangeManager(LoggableMixin, SingletonMixin):
         return instance
 
     def _on_tick(self, exchange, type, tick):
-        self.debug('Received {type} tick from {exchange}'.format(
+        self.info('Received {type} tick from {exchange}'.format(
             type=type, exchange=exchange))
         for subscriber in self._subscribers[exchange]:
             subscriber.notify_tick(exchange, type, tick)
