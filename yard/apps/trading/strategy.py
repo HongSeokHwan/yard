@@ -1,13 +1,11 @@
 import time
 import threading
-
-from django.conf import settings
-import simplejson as json
-import websocket
 import datetime
 
 from yard.utils.log import LoggableMixin
 from yard.utils.meta import SingletonMixin
+
+from yard.apps.exchange.bridge import subscribe
 
 
 BITCOIN_CODE = 'bitcoin'
@@ -19,21 +17,8 @@ class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
         self.quote_subscribers = []
 
     def run(self):
-        url = 'ws://{host}:{port}/bridge'.format(
-            host=settings.BRIDGE_SERVER_HOST, port=settings.BRIDGE_SERVER_PORT)
-        exchange = None
-        ws = websocket.create_connection(url)
-        ws.send(json.dumps({
-            'type': 'subscribe',
-            'data': {
-                'exchange': exchange
-            },
-        }))
-
-        while True:
-            raw = ws.recv()
-            json_quote = json.loads(raw)
-            self.publish(json_quote)
+        for quote in subscribe():
+            self.publish(quote)
 
     def publish(self, json_quote):
         for quote_subscriber in self.quote_subscribers:
@@ -161,7 +146,7 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
 
     def message(self, json_quote):
         quote_type = json_quote['type']
-        if quote_type is 'quote':
+        if quote_type == 'quote':
             q = Quote()
             q.parse(json_quote)
 
@@ -173,6 +158,8 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
                 exchange_dict = self.quotes[q.exchange]
                 exchange_dict[q.code] = q
         else:
+            print json_quote
+
             # TODO handle trade quote
             pass
 
@@ -255,7 +242,8 @@ class StrategyManager(LoggableMixin, SingletonMixin):
         qp.run()
 
         while True:
-            time.sleep(0.1)
+            time.sleep(1)
+            print 'main thread'
             # calculate normal spread
             # check current spread
             # enter if chance
