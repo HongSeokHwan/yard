@@ -202,6 +202,7 @@ def get_diffs(a, b):
     for row in a:
         diff = row - b[i]
         diffs.append(diff)
+        i += 1
     return diffs
 
 
@@ -211,6 +212,7 @@ def get_rate_percents(a, b):
     for row in a:
         ret = row * 100 / b[i]
         rets.append(ret)
+        i += 1
     return rets
 
 
@@ -220,12 +222,13 @@ def get_rates(a, b):
     for row in a:
         ret = row / b[i]
         rets.append(ret)
+        i += 1
     return rets
 
 
 def main():
     start = '2014-08-01'
-    end = '2014-08-02'
+    end = '2014-08-05'
 
     print 'start get data from db'
     usdkrx_converter = get_usdkrx_data(start, end)

@@ -9,17 +9,23 @@ import MySQLdb as mdb
 import xml.etree.ElementTree as ET
 
 
-ICBIT_URL_TEMPLATE = 'https://api.icbit.se/api/orders/book?ticker=%s'
-KORBIT_URL = 'https://api.korbit.co.kr/v1/orderbook'
-BITSTAMP_URL = 'https://www.bitstamp.net/api/order_book/'
-CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
-    'ConversionRate?FromCurrency=%s&ToCurrency=%s'
-
 ICBIT_CODE_1409 = 'BUU4'
 ICBIT_CODE_1412 = 'BUZ4'
 KORBIT_CODE = 'KORBIT'
 BITSTAMP_CODE = 'BITSTAMP'
+BTCCHINA_CODE = 'BTCCHINA'
+
 USDKRW = 'USDKRW'
+USDCNY = 'USDCNY'
+KRWCNY = 'KRWCNY'
+
+
+ICBIT_URL_TEMPLATE = 'https://api.icbit.se/api/orders/book?ticker=%s'
+KORBIT_URL = 'https://api.korbit.co.kr/v1/orderbook'
+BITSTAMP_URL = 'https://www.bitstamp.net/api/order_book/'
+BTCCHINA_URL = 'https://data.btcchina.com/data/ticker?market=btccny'
+CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
+    'ConversionRate?FromCurrency=%s&ToCurrency=%s'
 
 
 class Quote:
@@ -57,6 +63,20 @@ class Quote:
         self.bid_quantities = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.ask_quantities = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+    def btcchina_to_quote(self, raw_quote):
+        self.code = BTCCHINA_CODE 
+        try:
+            j = json.loads(raw_quote)
+            data = j['ticker']
+            self.bid_prices[0] = float(data['buy'])
+            self.ask_prices[0] = float(data['sell'])
+
+            return True
+
+        except Exception, e:
+            print str(e)
+            return False
+
     def bitstamp_to_quote(self, bitstamp_quote):
         self.code = BITSTAMP_CODE
         try:
@@ -78,8 +98,8 @@ class Quote:
             print str(e)
             return False
 
-    def usdkrw_to_quote(self, quote):
-        self.code = USDKRW
+    def currency_to_quote(self, code, quote):
+        self.code = code
         self.bid_prices[0] = quote
         self.ask_prices[0] = quote
 
@@ -194,36 +214,57 @@ def parse_currency_value(content):
 def _main(con):
     print 'start collectdetailquote.'
 
+    # futures data
     raw_icbit_quote_1409 = get_quote(ICBIT_URL_TEMPLATE % ICBIT_CODE_1409)
-    raw_icbit_quote_1412 = get_quote(ICBIT_URL_TEMPLATE % ICBIT_CODE_1412)
-    raw_korbit_quote = get_quote(KORBIT_URL)
-    raw_bitstamp_quote = get_quote(BITSTAMP_URL)
-
-    usdkrw_content = get_currency('USD', 'KRW')
-    usdkrw_value = float(parse_currency_value(usdkrw_content))
-    usdkrw_quote = Quote()
-    usdkrw_quote.usdkrw_to_quote(usdkrw_value)
-
     icbit_quote_1409 = Quote()
     icbit_quote_1409.icbit_to_quote(ICBIT_CODE_1409, raw_icbit_quote_1409)
 
+    raw_icbit_quote_1412 = get_quote(ICBIT_URL_TEMPLATE % ICBIT_CODE_1412)
     icbit_quote_1412 = Quote()
     icbit_quote_1412.icbit_to_quote(ICBIT_CODE_1412, raw_icbit_quote_1412)
 
+    # btc data
+    raw_korbit_quote = get_quote(KORBIT_URL)
     korbit_quote = Quote()
     korbit_quote.korbit_to_quote(raw_korbit_quote)
 
+    raw_bitstamp_quote = get_quote(BITSTAMP_URL)
     bitstamp_quote = Quote()
     bitstamp_quote.bitstamp_to_quote(raw_bitstamp_quote)
 
+    raw_btcchina_quote = get_quote(BTCCHINA_URL)
+    btcchina_quote = Quote()
+    btcchina_quote.btcchina_to_quote(raw_btcchina_quote)
+
+    # currency data
+    usdkrw_content = get_currency('USD', 'KRW')
+    usdkrw_value = float(parse_currency_value(usdkrw_content))
+    usdkrw_quote = Quote()
+    usdkrw_quote.currency_to_quote(USDKRW, usdkrw_value)
+
+    usdcny_content = get_currency('USD', 'CNY')
+    usdcny_value = float(parse_currency_value(usdcny_content))
+    usdcny_quote = Quote()
+    usdcny_quote.currency_to_quote(USDCNY, usdcny_value)
+
+    krwcny_content = get_currency('KRW', 'CNY')
+    krwcny_value = float(parse_currency_value(krwcny_content))
+    krwcny_quote = Quote()
+    krwcny_quote.currency_to_quote(KRWCNY, krwcny_value)
+
+    # date
     now = datetime.datetime.now()
     dt = time.strftime('%Y-%m-%d %H:%M:%S')
 
+    # to database
     icbit_quote_1409.to_database(con, dt)
     icbit_quote_1412.to_database(con, dt)
     korbit_quote.to_database(con, dt)
     bitstamp_quote.to_database(con, dt)
+    btcchina_quote.to_database(con, dt)
     usdkrw_quote.to_database(con, dt)
+    usdcny_quote.to_database(con, dt)
+    krwcny_quote.to_database(con, dt)
 
     print 'end get quote and insert into db.', now
     time.sleep(30)

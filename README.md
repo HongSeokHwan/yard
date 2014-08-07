@@ -53,3 +53,9 @@ cp yard/local_settings.py.template yard/local_settings.py
 
 ### Trading
 - Prototype
+
+
+### Analysis
+- Collect data from public web to database(mysql)
+- Database to csv
+- Develop trading strategy
