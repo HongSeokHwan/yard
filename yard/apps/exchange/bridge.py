@@ -19,8 +19,8 @@ from yard.utils.meta import SingletonMixin
 _loop = tornado.ioloop.IOLoop.instance()
 
 
-# Exchange
-# --------
+# Exchange (Abstract)
+# -------------------
 
 class AbstractExchange(LoggableMixin):
     exchange_code = None
@@ -103,10 +103,10 @@ class PollingMixin(object):
     def start(self):
         super(PollingMixin, self).start()
 
-        if self.quote_poll_url:
+        if self.get_quote_poll_url():
             for _ in range(self.quote_poll_concurrency):
                 self.poll_quote()
-        if self.trade_poll_url:
+        if self.get_trade_poll_url():
             for _ in range(self.trade_poll_concurrency):
                 self.poll_trade()
 
@@ -115,7 +115,7 @@ class PollingMixin(object):
         client = SimpleAsyncHTTPClient()
         while True:
             self.debug('Polling quote')
-            response = yield client.fetch(self.quote_poll_url)
+            response = yield client.fetch(self.get_quote_poll_url())
             tick = self.load_message(response.body)
             quote = self.normalize_quote(tick)
             if not quote:
@@ -131,7 +131,7 @@ class PollingMixin(object):
         client = SimpleAsyncHTTPClient()
         while True:
             self.debug('Polling trade')
-            response = yield client.fetch(self.trade_poll_url)
+            response = yield client.fetch(self.get_trade_poll_url())
             tick = self.load_message(response.body)
             trade = self.normalize_trade(tick)
             if not trade:
@@ -142,11 +142,42 @@ class PollingMixin(object):
                 if not first:
                     self.publish('trade', trade)
 
+    def get_quote_poll_url(self):
+        return self.quote_poll_url
+
+    def get_trade_poll_url(self):
+        return self.trade_poll_url
+
 
 class XMLMixin(object):
     def load_message(self, text):
         return xmltodict.parse(text)
 
+
+class AbstractFxExchange(XMLMixin, PollingMixin, AbstractExchange):
+    exchange_code = 'usdkrw'
+    currency = 'krw'
+    trade_poll_concurrency = 1
+    trade_poll_url_tmpl = ('http://www.webservicex.net/CurrencyConvertor.asmx/'
+                           'ConversionRate?FromCurrency={from_}'
+                           '&ToCurrency={to}')
+    from_currency = None
+    to_currency = None
+
+    def get_trade_poll_url(self):
+        return self.trade_poll_url_tmpl.format(
+            from_=self.from_currency, to=self.to_currency)
+
+    def normalize_trade(self, tick):
+        if not tick:
+            return None
+        return {
+            'price': tick['double']['#text'],
+        }
+
+
+# Exchange (Concrete)
+# -------------------
 
 class KorbitExchange(PollingMixin, AbstractExchange):
     exchange_code = 'korbit'
@@ -214,19 +245,25 @@ class BitstampExchange(WebsocketMixin, AbstractExchange):
         }
 
 
-class UsdToKrwExchange(XMLMixin, PollingMixin, AbstractExchange):
+class UsdToKrwExchange(AbstractFxExchange):
     exchange_code = 'usdkrw'
     currency = 'krw'
-    trade_poll_concurrency = 2
-    trade_poll_url = ('http://www.webservicex.net/CurrencyConvertor.asmx/'
-                      'ConversionRate?FromCurrency=USD&ToCurrency=KRW')
+    from_currency = 'USD'
+    to_currency = 'KRW'
 
-    def normalize_trade(self, tick):
-        if not tick:
-            return None
-        return {
-            'price': tick['double']['#text'],
-        }
+
+class CnyToKrwExchange(AbstractFxExchange):
+    exchange_code = 'cnykrw'
+    currency = 'krw'
+    from_currency = 'CNY'
+    to_currency = 'KRW'
+
+
+class UsdToCnyExchange(AbstractFxExchange):
+    exchange_code = 'usdcny'
+    currency = 'cny'
+    from_currency = 'USD'
+    to_currency = 'CNY'
 
 
 # Manager
@@ -237,6 +274,8 @@ class ExchangeManager(LoggableMixin, SingletonMixin):
         KorbitExchange,
         BitstampExchange,
         UsdToKrwExchange,
+        CnyToKrwExchange,
+        UsdToCnyExchange,
     )])
 
     def __init__(self):
