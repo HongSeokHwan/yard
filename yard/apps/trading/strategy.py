@@ -1,7 +1,43 @@
 import time
+import threading
+
+from django.conf import settings
+import simplejson as json
+import websocket
+import datetime
 
 from yard.utils.log import LoggableMixin
 from yard.utils.meta import SingletonMixin
+
+
+BITCOIN_CODE = 'bitcoin'
+
+
+class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
+    def __init__(self):
+        super(QuoteProducer, self).__init__()
+        self.quote_subscribers = []
+
+    def run(self):
+        url = 'ws://{host}:{port}/bridge'.format(
+            host=settings.BRIDGE_SERVER_HOST, port=settings.BRIDGE_SERVER_PORT)
+        exchange = None
+        ws = websocket.create_connection(url)
+        ws.send(json.dumps({
+            'type': 'subscribe',
+            'data': {
+                'exchange': exchange
+            },
+        }))
+
+        while True:
+            raw = ws.recv()
+            json_quote = json.loads(raw)
+            self.publish(json_quote)
+
+    def publish(self, json_quote):
+        for quote_subscriber in self.quote_subscribers:
+            quote_subscriber.message(json_quote)
 
 
 class OrderSheet(LoggableMixin):
@@ -81,24 +117,81 @@ class Book(LoggableMixin):
 
 
 class Quote(LoggableMixin):
-    def __init__(self, code):
+    BITCOIN_EXCHANGES = ['bitstamp', 'korbit', ]
+
+    def __init__(self):
         super(Quote, self).__init__()
-        self.code = code
-        self.bid_prices = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.ask_prices = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.bid_quantities = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.ask_quantities = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.update_time = None
+        self.code = None
+        self.exchange = None
+        self.currency = None
+        self.bid_data = None
+        self.ask_data = None
+        self.last_updated_time = None
+        self.bid_price1 = 0.0
+        self.ask_price1 = 0.0
+
+    def __str__(self):
+        return '%s (%s) %.2f - %.2f (%s)' % (
+            self.exchange, self.code, self.ask_price1, self.bid_price1,
+            self.last_updated_time)
+
+    def parse(self, json_quote):
+        data = json_quote['data']
+        self.exchange = data['exchange']
+        if self.exchange in Quote.BITCOIN_EXCHANGES:
+            self.code = BITCOIN_CODE
+        else:
+            self.code = data['code']
+
+        self.currency = data['currency']
+        self.bid_data = data['tick']['bids']
+        self.ask_data = data['tick']['asks']
+
+        self.bid_price1 = float(data['tick']['bids'][0][0])
+        self.ask_price1 = float(data['tick']['asks'][0][0])
+
+        self.last_updated_time = datetime.datetime.now()
 
 
 class QuoteBoard(LoggableMixin, SingletonMixin):
     def __init__(self):
         super(QuoteBoard, self).__init__()
-        self.quotes = {}
+        self.quotes = {}  # { exchange: { code: Quote } }
+        self.lock = threading.Lock()
 
-    def append(self, quote):
+    def message(self, json_quote):
+        quote_type = json_quote['type']
+        if quote_type is 'quote':
+            q = Quote()
+            q.parse(json_quote)
+
+            self.info(str(q))
+
+            with self.lock:
+                if q.exchange not in self.quotes:
+                    self.quotes[q.exchange] = {}
+                exchange_dict = self.quotes[q.exchange]
+                exchange_dict[q.code] = q
+        else:
+            # TODO handle trade quote
+            pass
+
+    def get_quote(self, exchange, code):
         #TODO
         pass
+
+    def get_bitcoin_quote(self, exchange):
+        code = BITCOIN_CODE
+
+        with self.lock:
+            if exchange not in self.quotes:
+                return None
+            exchange_dict = self.quotes[exchange]
+
+            if code not in exchange_dict:
+                return None
+
+            return exchange_dict[code]
 
 
 class Instrument(LoggableMixin):
@@ -119,6 +212,19 @@ class IStrategy(LoggableMixin):
         super(IStrategy, self).__init__()
 
     def run(self):
+        pass
+
+
+class SpreadCalculator(LoggableMixin):
+    def __init__(self, monitor_code, target_code, currency_code):
+        super(SpreadCalculator, self).__init__()
+        self.monitor_code = monitor_code
+        self.target_code = target_code
+        self.currency_code = currency_code
+        self.cur_spread = 0.0
+
+    def update(self):
+        qb = QuoteBoard()
         pass
 
 
@@ -144,6 +250,10 @@ class StrategyManager(LoggableMixin, SingletonMixin):
         self.strategies[name] = strategy
 
     def run(self):
+        qp = QuoteProducer()
+        qp.quote_subscribers.append(QuoteBoard())
+        qp.run()
+
         while True:
             time.sleep(0.1)
             # calculate normal spread
