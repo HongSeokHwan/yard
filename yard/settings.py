@@ -80,6 +80,14 @@ DATABASES = {
     }
 }
 
+PERIODIC_QUOTE_DATABASE = {
+    'host': '14.63.217.41',
+    'port': 8088,
+    'user': 'root',
+    'passwd': 'baadf00d',
+    'database': 'yard',
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

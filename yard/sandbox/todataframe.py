@@ -2,7 +2,6 @@
 
 import MySQLdb as mdb
 import csv
-import MySQLdb as mdb
 import pandas as pd
 import pandas.io.sql as psql
 

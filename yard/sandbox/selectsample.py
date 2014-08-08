@@ -3,10 +3,13 @@
 
 import MySQLdb as mdb
 
-con = mdb.connect('localhost', 'root', 'baadf00d', 'yard');
+con = mdb.connect(host='14.63.217.41',
+                  port=8088,
+                  user='root',
+                  passwd='baadf00d',
+                  db='yard')
 
-with con: 
-
+with con:
     cur = con.cursor(mdb.cursors.DictCursor)
     cur.execute("SELECT * FROM Writers")
 
