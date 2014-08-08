@@ -8,7 +8,7 @@ from yard.utils.tocsv import to_csv
 def index(request):
     content = """
     Usage:
-http://14.63.217.41:8000/study/quotedata?codes=BITSTAMP&codes=KORBIT&start_date=2014-01-01&end_date=2014-12-31
+http://14.63.217.41/study/quotedata?codes=BITSTAMP&codes=KORBIT&start_date=2014-01-01&end_date=2014-12-31
 codes = [
     ICBIT_CODE_1409 = 'BUU4'
     ICBIT_CODE_1412 = 'BUZ4'
