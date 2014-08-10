@@ -71,6 +71,7 @@ INSTALLED_APPS = (
     'yard.apps.account',
     'yard.apps.exchange',
     'yard.apps.trading',
+    'yard.apps.study',
 )
 
 DATABASES = {
