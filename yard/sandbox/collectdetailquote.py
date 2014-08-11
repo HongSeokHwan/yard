@@ -18,6 +18,7 @@ BTCCHINA_CODE = 'BTCCHINA'
 USDKRW = 'USDKRW'
 USDCNY = 'USDCNY'
 KRWCNY = 'KRWCNY'
+CNYKRW = 'CNYKRW'
 
 
 ICBIT_URL_TEMPLATE = 'https://api.icbit.se/api/orders/book?ticker=%s'
@@ -31,18 +32,18 @@ CURRENCY_URL_TEMPLATE = 'http://www.webservicex.net/CurrencyConvertor.asmx/' \
 class Quote:
     query_template = """
     insert into detail_quotes (
-    dt, code, 
+    dt, code,
 
-    bid_price1, bid_price2, bid_price3, bid_price4, bid_price5, 
-    bid_price6, bid_price7, bid_price8, bid_price9, bid_price10, 
+    bid_price1, bid_price2, bid_price3, bid_price4, bid_price5,
+    bid_price6, bid_price7, bid_price8, bid_price9, bid_price10,
 
-    ask_price1, ask_price2, ask_price3, ask_price4, ask_price5, 
-    ask_price6, ask_price7, ask_price8, ask_price9, ask_price10, 
+    ask_price1, ask_price2, ask_price3, ask_price4, ask_price5,
+    ask_price6, ask_price7, ask_price8, ask_price9, ask_price10,
 
-    bid_quantity1, bid_quantity2, bid_quantity3, bid_quantity4, bid_quantity5, 
-    bid_quantity6, bid_quantity7, bid_quantity8, bid_quantity9, bid_quantity10, 
+    bid_quantity1, bid_quantity2, bid_quantity3, bid_quantity4, bid_quantity5,
+    bid_quantity6, bid_quantity7, bid_quantity8, bid_quantity9, bid_quantity10,
 
-    ask_quantity1, ask_quantity2, ask_quantity3, ask_quantity4, ask_quantity5, 
+    ask_quantity1, ask_quantity2, ask_quantity3, ask_quantity4, ask_quantity5,
     ask_quantity6, ask_quantity7, ask_quantity8, ask_quantity9, ask_quantity10)
 
     VALUES ('%s', '%s', %s %s %s %s)"""
@@ -64,7 +65,7 @@ class Quote:
         self.ask_quantities = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def btcchina_to_quote(self, raw_quote):
-        self.code = BTCCHINA_CODE 
+        self.code = BTCCHINA_CODE
         try:
             j = json.loads(raw_quote)
             data = j['ticker']
@@ -148,31 +149,31 @@ class Quote:
 
     def create_query(self, dt):
         bid_price_str = Quote.ten_array_template_with_comma % (
-                self.bid_prices[0], self.bid_prices[1], 
-                self.bid_prices[2], self.bid_prices[3], 
+                self.bid_prices[0], self.bid_prices[1],
+                self.bid_prices[2], self.bid_prices[3],
                 self.bid_prices[4], self.bid_prices[5],
-                self.bid_prices[6], self.bid_prices[7], 
+                self.bid_prices[6], self.bid_prices[7],
                 self.bid_prices[8], self.bid_prices[9])
 
         ask_price_str = Quote.ten_array_template_with_comma % (
-                self.ask_prices[0], self.ask_prices[1], 
-                self.ask_prices[2], self.ask_prices[3], 
+                self.ask_prices[0], self.ask_prices[1],
+                self.ask_prices[2], self.ask_prices[3],
                 self.ask_prices[4], self.ask_prices[5],
-                self.ask_prices[6], self.ask_prices[7], 
+                self.ask_prices[6], self.ask_prices[7],
                 self.ask_prices[8], self.ask_prices[9])
 
         bid_quantity_str = Quote.ten_array_template_with_comma % (
-                self.bid_quantities[0], self.bid_quantities[1], 
-                self.bid_quantities[2], self.bid_quantities[3], 
+                self.bid_quantities[0], self.bid_quantities[1],
+                self.bid_quantities[2], self.bid_quantities[3],
                 self.bid_quantities[4], self.bid_quantities[5],
-                self.bid_quantities[6], self.bid_quantities[7], 
+                self.bid_quantities[6], self.bid_quantities[7],
                 self.bid_quantities[8], self.bid_quantities[9])
 
         ask_quantity_str = Quote.ten_array_template_without_comma % (
-                self.ask_quantities[0], self.ask_quantities[1], 
-                self.ask_quantities[2], self.ask_quantities[3], 
+                self.ask_quantities[0], self.ask_quantities[1],
+                self.ask_quantities[2], self.ask_quantities[3],
                 self.ask_quantities[4], self.ask_quantities[5],
-                self.ask_quantities[6], self.ask_quantities[7], 
+                self.ask_quantities[6], self.ask_quantities[7],
                 self.ask_quantities[8], self.ask_quantities[9])
 
         query = Quote.query_template % (
@@ -252,6 +253,11 @@ def _main(con):
     krwcny_quote = Quote()
     krwcny_quote.currency_to_quote(KRWCNY, krwcny_value)
 
+    cnykrw_content = get_currency('CNY', 'KRW')
+    cnykrw_value = float(parse_currency_value(cnykrw_content))
+    cnykrw_quote = Quote()
+    cnykrw_quote.currency_to_quote(CNYKRW, cnykrw_value)
+
     # date
     now = datetime.datetime.now()
     dt = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -265,6 +271,7 @@ def _main(con):
     usdkrw_quote.to_database(con, dt)
     usdcny_quote.to_database(con, dt)
     krwcny_quote.to_database(con, dt)
+    cnykrw_quote.to_database(con, dt)
 
     print 'end get quote and insert into db.', now
     time.sleep(30)
