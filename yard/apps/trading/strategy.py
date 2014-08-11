@@ -9,28 +9,6 @@ from yard.utils.meta import SingletonMixin
 from yard.apps.exchange.bridge import subscribe
 
 
-BITCOIN_CODE = 'bitcoin'
-BIT_STAMP = 'bitstamp'
-KORBIT = 'korbit'
-BTC_CHINA = 'btcchina'
-ICBIT = 'icbit'
-CURRENCY_EXCHANGE = 'webservicex'
-
-BITCOIN_EXCHANGES = [
-    BIT_STAMP,
-    KORBIT,
-    BTC_CHINA
-]
-
-BITCOIN_FUTURES_EXCHANGES = [
-    ICBIT
-]
-
-USD = 'usd'
-KRW = 'krw'
-CNY = 'cny'
-
-
 class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
     def __init__(self):
         super(QuoteProducer, self).__init__()
@@ -170,6 +148,11 @@ class OrderSheet(LoggableMixin):
     def __init__(self):
         super(OrderSheet, self).__init__()
         self.order_id = 0  # is it possible??
+        self.market = None
+        self.code = None
+        self.price = 0.0
+        self.quantity = 0.0
+        self.askbid = None
 
 
 class Order(LoggableMixin):

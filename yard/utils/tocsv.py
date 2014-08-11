@@ -6,17 +6,18 @@ from yard import settings
 
 
 COLUMN_ALL = '*'
-COLUMN_SIMPLE = 'dt, code, bid_price1, ask_price1'
+COLUMN_SIMPLE = 'dt, bid_price1, ask_price1'
 
 
 def dataframe_from_db(con, code, column, start_date, end_date):
     query_template = "select %s from detail_quotes where code = '%s' "\
-        "and dt >= '%s' and dt <= '%s'"
+        "and dt >= '%s' and dt <= '%s' and bid_price1 > 0"
 
     with con:
         query = query_template % (column, code, start_date, end_date)
         df = psql.frame_query(query, con)
         df.set_index(['dt'], inplace=True)
+        #df = df[df.bid_price1 > 0]
         df.rename(columns=lambda x: '%s_%s' % (code, x), inplace=True)
     return df
 

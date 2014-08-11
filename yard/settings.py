@@ -173,6 +173,70 @@ BRIDGE_SERVER_HOST = 'localhost'
 BRIDGE_SERVER_PORT = 9000
 
 
+# Market info
+# exchange: { code: { infos } }
+# ----
+
+MARKET_INFO = {
+    'bitstamp': {
+        'btcusd': {
+            'code': 'BTSTP_BTCUSD_CURRENCY',  # TODO change it
+            'type': 'spot',
+            'description': 'bitstamp bitcoin usd base currency',
+        }
+    },
+    'korbit': {
+        'btckrw': {
+            'code': 'KRBT_BTCKRW_CURRENCY',  # TODO change it
+            'type': 'spot',
+            'description': 'bitstamp bitcoin krx base currency',
+        }
+    },
+    'btcchina': {
+        'btccny': {
+            'code': 'BTCNA_BTCCNY_CURRENCY',  # TODO change it
+            'type': 'spot',
+            'description': 'btcchina bitcoin cny base currency',
+        }
+    },
+    'icbit': {
+        '1409_futures': {
+            'code': 'BUU4',
+            'type': 'futures',
+            'description': 'icbit bitcoin usd base futures',
+        },
+        '1412_futures': {
+            'code': 'BUZ4',
+            'type': 'futures',
+            'description': 'icbit bitcoin usd base futures',
+        },
+    },
+    'webservicex': {
+        'usdkrw': {
+            'code': '',
+            'type': '',
+            'description': '',
+        },
+        'cnykrw': {
+            'code': '',
+            'type': '',
+            'description': '',
+        },
+        'cnyusd': {
+            'code': '',
+            'type': '',
+            'description': '',
+        },
+    }
+}
+
+USD = 'usd'
+KRW = 'krw'
+CNY = 'cny'
+
+BITCOIN_EXCHANGES = MARKET_INFO.keys()
+
+
 # Local settings
 # --------------
 
