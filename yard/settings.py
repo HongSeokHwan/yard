@@ -174,67 +174,48 @@ BRIDGE_SERVER_PORT = 9000
 
 
 # Market info
-# exchange: { code: { infos } }
+# exchange: { ticker: { infos } }
 # ----
 
 MARKET_INFO = {
-    'bitstamp': {
-        'btcusd': {
-            'code': 'BTSTP_BTCUSD_CURRENCY',  # TODO change it
-            'type': 'spot',
-            'description': 'bitstamp bitcoin usd base currency',
-        }
+    'BTCUSD BITSTAMP CURRENCY': {
+        'code': '',
+        'type': 'currency',
+        'description': 'bitstamp bitcoin usd base currency',
     },
-    'korbit': {
-        'btckrw': {
-            'code': 'KRBT_BTCKRW_CURRENCY',  # TODO change it
-            'type': 'spot',
-            'description': 'bitstamp bitcoin krx base currency',
-        }
+    'BTCKRW KORBIT CURRENCY': {
+        'code': '',
+        'type': 'currency',
+        'description': 'korbit bitcoin krw base currency',
     },
-    'btcchina': {
-        'btccny': {
-            'code': 'BTCNA_BTCCNY_CURRENCY',  # TODO change it
-            'type': 'spot',
-            'description': 'btcchina bitcoin cny base currency',
-        }
+    'BTCCNY BTCCHINA CURRENCY': {
+        'code': '',
+        'type': 'currency',
+        'description': 'btcchina bitcoin cny base currency',
     },
-    'icbit': {
-        '1409_futures': {
-            'code': 'BUU4',
-            'type': 'futures',
-            'description': 'icbit bitcoin usd base futures',
-        },
-        '1412_futures': {
-            'code': 'BUZ4',
-            'type': 'futures',
-            'description': 'icbit bitcoin usd base futures',
-        },
+    'BTCUSD 1409 ICBIT FUTURES': {
+        'code': 'BUU4',
+        'type': 'futures',
+        'description': 'icbit bitcoin usd base futures',
     },
-    'webservicex': {
-        'usdkrw': {
-            'code': '',
-            'type': '',
-            'description': '',
-        },
-        'cnykrw': {
-            'code': '',
-            'type': '',
-            'description': '',
-        },
-        'cnyusd': {
-            'code': '',
-            'type': '',
-            'description': '',
-        },
-    }
+    'BTCUSD 1412 ICBIT FUTURES': {
+        'code': 'BUZ4',
+        'type': 'futures',
+        'description': 'icbit bitcoin usd base futures',
+    },
+    'USDKRW WEBSERVICEX CURRENCY': {
+        'code': '',
+        'type': 'currency',
+        'description': '',
+    },
+    'CNYKRW WEBSERVICEX CURRENCY': {
+        'code': '',
+        'type': 'currency',
+        'description': '',
+    },
 }
 
-USD = 'usd'
-KRW = 'krw'
-CNY = 'cny'
-
-BITCOIN_EXCHANGES = MARKET_INFO.keys()
+BITCOIN_TICKERS = MARKET_INFO.keys()
 
 
 # Local settings
