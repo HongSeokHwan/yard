@@ -7,6 +7,7 @@
 - git
 - gem
 
+
 ## Installation
 
 To set up a virtual environment, run following commands in order:
@@ -59,3 +60,12 @@ cp yard/local_settings.py.template yard/local_settings.py
 - Collect data from public web to database(mysql)
 - Database to csv
 - Develop trading strategy
+
+
+## Server run scripts
+cd ~/workspace/yard
+ipython notebook --no-browser --port=8001 &
+(local) ssh -N -f -L localhost:8889:localhost:8001 yard@www.jiref.com
+
+cd ~/.workspace/yard
+python ./manage.py runserver 0.0.0.0:8000
