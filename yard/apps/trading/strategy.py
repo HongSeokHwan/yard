@@ -7,6 +7,14 @@ from yard.utils.log import LoggableMixin
 from yard.utils.meta import SingletonMixin
 
 from yard.apps.exchange.bridge import subscribe
+from yard.settings import (
+    BTCUSD_BITSTAMP_CURRENCY,
+    BTCKRW_KORBIT_CURRENCY,
+    BTCCNY_BTCCHINA_CURRENCY,
+    #BTCUSD_1409_ICBIT_FUTURES,
+    #BTCUSD_1412_ICBIT_FUTURES,
+    USDKRW_WEBSERVICEX_CURRENCY,
+    CNYKRW_WEBSERVICEX_CURRENCY)
 
 
 class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
@@ -26,29 +34,22 @@ class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
 class Quote(LoggableMixin):
     def __init__(self):
         super(Quote, self).__init__()
-        self.code = None
-        self.exchange = None
-        self.currency = None
+        self.ticker = None
         self.bid_data = None
         self.ask_data = None
+        self.bid_price1 = 0.0  # cache
+        self.ask_price1 = 0.0  # cache
         self.last_updated_time = None
-        self.bid_price1 = 0.0
-        self.ask_price1 = 0.0
 
     def __str__(self):
-        return '%s (%s) %.2f - %.2f (%s)' % (
-            self.exchange, self.code, self.ask_price1, self.bid_price1,
-            self.last_updated_time)
+        return '%s %.2f - %.2f (%s)' % (self.ticker,
+                                        self.ask_price1,
+                                        self.bid_price1,
+                                        self.last_updated_time)
 
     def parse(self, json_quote):
         data = json_quote['data']
-        self.exchange = data['exchange']
-        if self.exchange in BITCOIN_EXCHANGES:
-            self.code = BITCOIN_CODE
-        else:
-            self.code = data['code']
-
-        self.currency = data['currency']
+        self.ticker = data['ticker']
         self.bid_data = data['tick']['bids']
         self.ask_data = data['tick']['asks']
 
@@ -61,28 +62,18 @@ class Quote(LoggableMixin):
 class TradeQuote(LoggableMixin):
     def __init__(self):
         super(TradeQuote, self).__init__()
-        self.code = None
-        self.exchange = None
-        self.currency = None
+        self.ticker = None
         self.price = None
         self.amount = None
         self.order_id = None
 
     def __str__(self):
-        return '%s (%s) %.2f (%s)' % (
-            self.exchange, self.code, self.price, self.last_updated_time)
+        return '%s %.2f(%.2f) (%s)' % (
+            self.ticker, self.price, self.amount, self.last_updated_time)
 
     def parse(self, json_quote):
         data = json_quote['data']
-        self.exchange = data['exchange']
-        if self.exchange in BITCOIN_EXCHANGES:
-            self.code = BITCOIN_CODE
-        else:
-            # TODO: uncomment here if code is implemented.
-            #self.code = data['code']
-            pass
-
-        self.currency = data['currency']
+        self.ticker = data['ticker']
         self.price = float(data['tick']['price'])
         try:
             self.amount = float(data['tick']['amount'])
@@ -90,14 +81,15 @@ class TradeQuote(LoggableMixin):
         except Exception, e:
             self.warning(str(e))
             self.warning(json_quote)
+
         self.last_updated_time = datetime.datetime.now()
 
 
 class QuoteBoard(LoggableMixin, SingletonMixin):
     def __init__(self):
         super(QuoteBoard, self).__init__()
-        self.trade_quotes = {}  # { exchange: { code: Quote } }
-        self.quotes = {}  # { exchange: { code: Quote } }
+        self.trade_quotes = {}  # { ticker: TradeQuote } }
+        self.quotes = {}  # { ticker: Quote } }
         self._lock = threading.Lock()
 
     def notice(self, json_quote):
@@ -107,41 +99,25 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
             q.parse(json_quote)
             #self.info(str(q))
             with self._lock:
-                if q.exchange not in self.trade_quotes:
-                    self.trade_quotes[q.exchange] = {}
-                exchange_dict = self.trade_quotes[q.exchange]
-                exchange_dict[q.code] = q
+                self.trade_quotes[q.ticker] = q
         elif quote_type == 'quote':
             q = Quote()
             q.parse(json_quote)
             #self.info(str(q))
             with self._lock:
-                if q.exchange not in self.quotes:
-                    self.quotes[q.exchange] = {}
-                exchange_dict = self.quotes[q.exchange]
-                exchange_dict[q.code] = q
+                self.quotes[q.ticker] = q
 
-    def get_trade_quote(self, exchange, code):
+    def get_trade_quote(self, exchange, ticker):
         with self._lock:
-            if exchange not in self.trade_quotes:
-                return None
-            exchange_dict = self.trade_quotes[exchange]
-            if code not in exchange_dict:
-                return None
-            return exchange_dict[code]
+            if ticker in self.trade_quotes:
+                return self.trade_quotes[ticker]
+        return None
 
-    def get_quote(self, exchange, code):
+    def get_quote(self, ticker):
         with self.lock:
-            if exchange not in self.quotes:
-                return None
-            exchange_dict = self.quotes[exchange]
-            if code not in exchange_dict:
-                return None
-            return exchange_dict[code]
-
-    def get_btc_quote(self, exchange):
-        code = BITCOIN_CODE
-        return self.get_quote(exchange, code)
+            if ticker in self.quotes:
+                return self.quotes[ticker]
+        return None
 
 
 class OrderSheet(LoggableMixin):
@@ -235,36 +211,20 @@ class IStrategy(LoggableMixin):
 
 
 class CurrencyConverter(LoggableMixin):
-    def __init__(self, from_currency, to_currency, exchange):
+    def __init__(self, ticker):
         super(CurrencyConverter, self).__init__()
-        self.from_currency = from_currency
-        self.to_currency = to_currency
-        self.currency_code = from_currency + to_currency
-        self.exchange = exchange
-        self.reverse_currency_code = to_currency + from_currency
+        self.ticker = ticker
 
     def is_ready(self):
-        currency_quote = QuoteBoard().get_trade_quote(
-            self.exchange, self.currency_code)
+        currency_quote = QuoteBoard().get_trade_quote(self.ticker)
         if currency_quote:
-            return True
-
-        reverse_currency_quote = QuoteBoard().get_trade_quote(
-            self.exchange, self.reverse_currency_code)
-        if reverse_currency_quote:
             return True
         return False
 
     def convert(self, price):
-        currency_quote = QuoteBoard().get_trade_quote(
-            self.exchange, self.currency_code)
+        currency_quote = QuoteBoard().get_trade_quote(self.ticker)
         if currency_quote:
-            return price * currency_quote.get_mid()
-
-        reverse_currency_quote = QuoteBoard().get_trade_quote(
-            self.exchange, self.reverse_currency_code)
-        if reverse_currency_quote:
-            return price / currency_quote.get_mid()
+            return price * currency_quote.price
         return None
 
 
@@ -279,19 +239,23 @@ class BtcMarketMaker(IStrategy):
     def __init__(self):
         super(BtcMarketMaker, self).__init__()
         self.cur_state = BtcMarketMaker.State.IDLE
-        self.usd_to_krw = CurrencyConverter(USD, KRW, CURRENCY_EXCHANGE)
-        self.cny_to_krw = CurrencyConverter(CNY, KRW, CURRENCY_EXCHANGE)
+        self.usd_to_krw = CurrencyConverter(USDKRW_WEBSERVICEX_CURRENCY)
+        self.cny_to_krw = CurrencyConverter(CNYKRW_WEBSERVICEX_CURRENCY)
 
     def run(self):
-        btc_china_quote = QuoteBoard().get_quote(BTC_CHINA)
-        bit_stamp_quote = QuoteBoard().get_quote(BIT_STAMP)
-        korbit_quote = QuoteBoard().get_quote(KORBIT)
+        btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
+        bitstamp_quote = QuoteBoard().get_quote(BTCUSD_BITSTAMP_CURRENCY)
+        korbit_quote = QuoteBoard().get_quote(BTCKRW_KORBIT_CURRENCY)
 
-        if btc_china_quote:
-            self.info(btc_china_quote)
+        # for testing
+        if btcchina_quote:
+            self.info(btcchina_quote)
 
-        if bit_stamp_quote:
-            self.info(bit_stamp_quote)
+        if bitstamp_quote:
+            self.info(bitstamp_quote)
+
+        if korbit_quote:
+            self.info(korbit_quote)
 
     def _set_state(self, new_state):
         self.cur_state = new_state
@@ -324,6 +288,7 @@ class StrategyRunner(LoggableMixin, SingletonMixin):
         StrategyManager().run()
 
 
+# TODO implement me.
 class SpreadCalculator(LoggableMixin):
     def __init__(self, monitor_code, target_code, currency_code):
         super(SpreadCalculator, self).__init__()

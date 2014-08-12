@@ -177,38 +177,46 @@ BRIDGE_SERVER_PORT = 9000
 # exchange: { ticker: { infos } }
 # ----
 
+BTCUSD_BITSTAMP_CURRENCY = 'BTCUSD_BITSTAMP_CURRENCY'
+BTCKRW_KORBIT_CURRENCY = 'BTCKRW_KORBIT_CURRENCY'
+BTCCNY_BTCCHINA_CURRENCY = 'BTCCNY_BTCCHINA_CURRENCY'
+BTCUSD_1409_ICBIT_FUTURES = 'BTCUSD_1409_ICBIT_FUTURES'
+BTCUSD_1412_ICBIT_FUTURES = 'BTCUSD_1412_ICBIT_FUTURES'
+USDKRW_WEBSERVICEX_CURRENCY = 'USDKRW_WEBSERVICEX_CURRENCY'
+CNYKRW_WEBSERVICEX_CURRENCY = 'CNYKRW_WEBSERVICEX_CURRENCY'
+
 MARKET_INFO = {
-    'BTCUSD BITSTAMP CURRENCY': {
+    BTCUSD_BITSTAMP_CURRENCY: {
         'code': '',
         'type': 'currency',
         'description': 'bitstamp bitcoin usd base currency',
     },
-    'BTCKRW KORBIT CURRENCY': {
+    BTCKRW_KORBIT_CURRENCY: {
         'code': '',
         'type': 'currency',
         'description': 'korbit bitcoin krw base currency',
     },
-    'BTCCNY BTCCHINA CURRENCY': {
+    BTCCNY_BTCCHINA_CURRENCY: {
         'code': '',
         'type': 'currency',
         'description': 'btcchina bitcoin cny base currency',
     },
-    'BTCUSD 1409 ICBIT FUTURES': {
+    BTCUSD_1409_ICBIT_FUTURES: {
         'code': 'BUU4',
         'type': 'futures',
         'description': 'icbit bitcoin usd base futures',
     },
-    'BTCUSD 1412 ICBIT FUTURES': {
+    BTCUSD_1412_ICBIT_FUTURES: {
         'code': 'BUZ4',
         'type': 'futures',
         'description': 'icbit bitcoin usd base futures',
     },
-    'USDKRW WEBSERVICEX CURRENCY': {
+    USDKRW_WEBSERVICEX_CURRENCY: {
         'code': '',
         'type': 'currency',
         'description': '',
     },
-    'CNYKRW WEBSERVICEX CURRENCY': {
+    CNYKRW_WEBSERVICEX_CURRENCY: {
         'code': '',
         'type': 'currency',
         'description': '',
