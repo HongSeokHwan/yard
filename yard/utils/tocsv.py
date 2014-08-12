@@ -38,8 +38,8 @@ def dataframes_from_db(codes, column, start_date, end_date):
     return df_sum
 
 
-def to_csv(codes, start_date, end_date, outstream):
-    df_sum = dataframes_from_db(codes, start_date, end_date)
+def to_csv(codes, column, start_date, end_date, outstream):
+    df_sum = dataframes_from_db(codes, column, start_date, end_date)
     s = StringIO.StringIO()
     if df_sum is not None:
         df_sum.to_csv(outstream)
