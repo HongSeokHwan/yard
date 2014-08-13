@@ -82,14 +82,9 @@ class TradeQuote(LoggableMixin):
 
         try:
             self.amount = float(data['tick']['amount'])
+            self.order_id = float(data['tick']['id'])
         except:
             pass
-
-        try:
-            self.order_id = float(data['tick']['id'])
-        except Exception, e:
-            self.warn(str(e))
-            self.warn(json_quote)
 
         self.last_updated_time = datetime.datetime.now()
 
