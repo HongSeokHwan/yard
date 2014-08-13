@@ -58,3 +58,6 @@ _refs/
 
 *.csv
 
+tags
+cscope.out
+
