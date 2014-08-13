@@ -49,7 +49,7 @@ class Quote(LoggableMixin):
 
     def parse(self, json_quote):
         data = json_quote['data']
-        self.ticker = data['ticker']
+        self.ticker = data['tick']['ticker']
         self.bid_data = data['tick']['bids']
         self.ask_data = data['tick']['asks']
 
@@ -63,24 +63,33 @@ class TradeQuote(LoggableMixin):
     def __init__(self):
         super(TradeQuote, self).__init__()
         self.ticker = None
-        self.price = None
-        self.amount = None
+        self.price = 0.0
+        self.amount = 0.0
         self.order_id = None
+        self.last_updated_time = None
 
     def __str__(self):
-        return '%s %.2f(%.2f) (%s)' % (
-            self.ticker, self.price, self.amount, self.last_updated_time)
+        try:
+            return '%s %.2f(%.2f) (%s)' % (self.ticker, self.price,
+                                           self.amount, self.last_updated_time)
+        except:
+            return '__str__ error'
 
     def parse(self, json_quote):
         data = json_quote['data']
-        self.ticker = data['ticker']
+        self.ticker = data['tick']['ticker']
         self.price = float(data['tick']['price'])
+
         try:
             self.amount = float(data['tick']['amount'])
+        except:
+            pass
+
+        try:
             self.order_id = float(data['tick']['id'])
         except Exception, e:
-            self.warning(str(e))
-            self.warning(json_quote)
+            self.warn(str(e))
+            self.warn(json_quote)
 
         self.last_updated_time = datetime.datetime.now()
 
@@ -97,13 +106,13 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
         if quote_type == 'trade':
             q = TradeQuote()
             q.parse(json_quote)
-            #self.info(str(q))
+            self.info(str(q))
             with self._lock:
                 self.trade_quotes[q.ticker] = q
         elif quote_type == 'quote':
             q = Quote()
             q.parse(json_quote)
-            #self.info(str(q))
+            self.info(str(q))
             with self._lock:
                 self.quotes[q.ticker] = q
 

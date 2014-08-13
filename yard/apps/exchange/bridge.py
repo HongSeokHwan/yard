@@ -121,6 +121,7 @@ class PollingMixin(object):
             if not quote:
                 continue
             if not is_equal(self._last_quote, quote):
+                quote['ticker'] = self.ticker
                 first = self._last_quote is None
                 self._last_quote = quote
                 if not first:
@@ -137,6 +138,7 @@ class PollingMixin(object):
             if not trade:
                 continue
             if not is_equal(self._last_trade, trade):
+                trade['ticker'] = self.ticker
                 first = self._last_trade is None
                 self._last_trade = trade
                 if not first:
@@ -163,6 +165,7 @@ class AbstractFxExchange(XMLMixin, PollingMixin, AbstractExchange):
                            '&ToCurrency={to}')
     from_currency = None
     to_currency = None
+    ticker = None
 
     def get_trade_poll_url(self):
         return self.trade_poll_url_tmpl.format(
@@ -186,6 +189,7 @@ class KorbitExchange(PollingMixin, AbstractExchange):
     trade_poll_concurrency = 2
     quote_poll_url = 'https://api.korbit.co.kr/v1/orderbook'
     trade_poll_url = 'https://api.korbit.co.kr/v1/transactions'
+    ticker = settings.BTCKRW_KORBIT_CURRENCY
 
     def normalize_quote(self, tick):
         if 'bids' not in tick or 'asks' not in tick:
@@ -209,6 +213,7 @@ class BitstampExchange(WebsocketMixin, AbstractExchange):
     websocket_url = ('wss://ws.pusherapp.com/app/de504dc5763aeef9ff52?'
                      'protocol=7&client=js&version=2.1.6&flash=false')
     channels = ('order_book', 'live_trades')
+    ticker = settings.BTCUSD_BITSTAMP_CURRENCY
 
     def on_connect(self):
         for channel in self.channels:
@@ -222,6 +227,7 @@ class BitstampExchange(WebsocketMixin, AbstractExchange):
             return
 
         data = json.loads(message['data'])
+        data['ticker'] = self.ticker
 
         if message['event'] == 'trade':
             self.publish('trade', data)
@@ -250,6 +256,7 @@ class UsdToKrwExchange(AbstractFxExchange):
     currency = 'krw'
     from_currency = 'USD'
     to_currency = 'KRW'
+    ticker = settings.USDKRW_WEBSERVICEX_CURRENCY
 
 
 class CnyToKrwExchange(AbstractFxExchange):
@@ -257,6 +264,7 @@ class CnyToKrwExchange(AbstractFxExchange):
     currency = 'krw'
     from_currency = 'CNY'
     to_currency = 'KRW'
+    ticker = settings.CNYKRW_WEBSERVICEX_CURRENCY
 
 
 class UsdToCnyExchange(AbstractFxExchange):
@@ -264,6 +272,7 @@ class UsdToCnyExchange(AbstractFxExchange):
     currency = 'cny'
     from_currency = 'USD'
     to_currency = 'CNY'
+    ticker = settings.USDCNY_WEBSERVICEX_CURRENCY
 
 
 # Manager
@@ -364,7 +373,7 @@ class Session(LoggableMixin, tornado.websocket.WebSocketHandler):
     def notify_tick(self, exchange, type, tick):
         self.send(type, {
             'exchange': exchange,
-            'currency': ExchangeManager().get(exchange).currency,
+            #'currency': ExchangeManager().get(exchange).currency,
             'tick': tick,
         })
 
@@ -379,8 +388,8 @@ class BridgeServer(LoggableMixin, SingletonMixin):
         ])
         application.listen(settings.BRIDGE_SERVER_PORT)
 
-        self.info('Start serving')
-
+        self.info('Start serving %s:%d' % (settings.BRIDGE_SERVER_HOST,
+                  settings.BRIDGE_SERVER_PORT))
         _loop.start()
 
 
