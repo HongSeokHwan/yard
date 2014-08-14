@@ -1,0 +1,13 @@
+{
+  "name": "bridge",
+  "version": "0.0.1",
+  "dependencies": {},
+  "description": "bridge",
+  "main": "bridge.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Minjong Chung",
+  "license": "ISC"
+}
