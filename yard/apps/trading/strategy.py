@@ -111,7 +111,7 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
             with self._lock:
                 self.quotes[q.ticker] = q
 
-    def get_trade_quote(self, exchange, ticker):
+    def get_trade_quote(self, ticker):
         with self._lock:
             if ticker in self.trade_quotes:
                 return self.trade_quotes[ticker]
@@ -206,9 +206,9 @@ class Book(LoggableMixin):
         pass
 
 
-class IStrategy(LoggableMixin):
+class StrategyAbstract(LoggableMixin):
     def __init__(self):
-        super(IStrategy, self).__init__()
+        super(StrategyAbstract, self).__init__()
 
     def run(self):
         pass
@@ -232,21 +232,22 @@ class CurrencyConverter(LoggableMixin):
         return None
 
 
-class BtcMarketMaker(IStrategy):
-    State = Enum(
-        'IDLE',
-        'AFTER_CANCEL',
-        'AFTER_ORDER',
-        'MARKET_MAKING',
-        'ERROR')
-
+class StateAbstract(LoggableMixin):
     def __init__(self):
-        super(BtcMarketMaker, self).__init__()
-        self.cur_state = BtcMarketMaker.State.IDLE
-        self.usd_to_krw = CurrencyConverter(USDKRW_WEBSERVICEX_CURRENCY)
-        self.cny_to_krw = CurrencyConverter(CNYKRW_WEBSERVICEX_CURRENCY)
+        super(StateAbstract, self).__init__()
 
-    def run(self):
+    def update(self):
+        self.warn('update should be overided')
+        return None
+
+
+class MonitorEnterChance(StateAbstract):
+    def __init__(self, parent):
+        super(MonitorEnterChance, self).__init__()
+        self.parent = parent
+        self.cur_state = Coward.State.MONITOR_ENTER_CHANCE
+
+    def update(self):
         btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
         bitstamp_quote = QuoteBoard().get_quote(BTCUSD_BITSTAMP_CURRENCY)
         korbit_quote = QuoteBoard().get_quote(BTCKRW_KORBIT_CURRENCY)
@@ -254,20 +255,71 @@ class BtcMarketMaker(IStrategy):
         cnykrw_quote = QuoteBoard().get_trade_quote(CNYKRW_WEBSERVICEX_CURRENCY)
 
         if not btcchina_quote:
-            return
+            return self
         if not bitstamp_quote:
-            return
+            return self
         if not korbit_quote:
-            return
+            return self
         if not usdkrw_quote:
-            return
+            return self
         if not cnykrw_quote:
-            return
+            return self
+
+        self.info('quote is ready.')
 
         # TODO
+        return self
 
-    def _set_state(self, new_state):
-        self.cur_state = new_state
+
+class CowardEntering(StateAbstract):
+    def __init__(self, parent):
+        super(CowardEntering, self).__init__()
+        self.parent = parent
+        self.cur_state = Coward.State.ENTERING
+
+    def update(self):
+        # TODO
+        return self
+
+
+class CowardMonitorExitChance(StateAbstract):
+    def __init__(self, parent):
+        super(CowardMonitorExitChance, self).__init__()
+        self.parent = parent
+        self.cur_state = Coward.State.MONITOR_EXIT_CHANCE
+
+    def update(self):
+        # TODO
+        return self
+
+
+class CowardCanceling(StateAbstract):
+    def __init__(self, parent):
+        super(CowardCanceling, self).__init__()
+        self.parent = parent
+        self.cur_state = Coward.State.CANCELING
+
+    def update(self):
+        # TODO
+        return self
+
+
+class Coward(StrategyAbstract):
+    State = Enum(
+        'MONITOR_ENTER_CHANCE',
+        'ENTERING',
+        'MONITOR_EXIT_CHANCE',
+        'CANCELING',
+        'ERROR')
+
+    def __init__(self):
+        super(Coward, self).__init__()
+        self.usd_to_krw = CurrencyConverter(USDKRW_WEBSERVICEX_CURRENCY)
+        self.cny_to_krw = CurrencyConverter(CNYKRW_WEBSERVICEX_CURRENCY)
+        self.state = MonitorEnterChance(self)
+
+    def run(self):
+        self.state = self.state.update()
 
 
 class StrategyManager(LoggableMixin, SingletonMixin):
@@ -293,7 +345,7 @@ class StrategyRunner(LoggableMixin, SingletonMixin):
     def start(self):
         self.info('Start running')
         StrategyManager().register_strategy(
-            'btc_market_making', BtcMarketMaker())
+            'coward', Coward())
         StrategyManager().run()
 
 
