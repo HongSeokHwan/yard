@@ -5,6 +5,7 @@ from enum import Enum
 
 from yard.utils.log import LoggableMixin
 from yard.utils.meta import SingletonMixin
+from yard.utils.looplog import OneTimeLog
 
 from yard.apps.exchange.bridge import subscribe
 from yard.settings import (
@@ -241,11 +242,17 @@ class StateAbstract(LoggableMixin):
         return None
 
 
-class MonitorEnterChance(StateAbstract):
+class CowardMonitorEnterChance(StateAbstract):
     def __init__(self, parent):
-        super(MonitorEnterChance, self).__init__()
+        super(CowardMonitorEnterChance, self).__init__()
         self.parent = parent
         self.cur_state = Coward.State.MONITOR_ENTER_CHANCE
+
+        self.btcchina_onetime_log = OneTimeLog('BTCCHINA quote is ready.')
+        self.bitstamp_onetime_log = OneTimeLog('BITSTAMP quote is ready.')
+        self.korbit_onetime_log = OneTimeLog('KORBIT quote is ready.')
+        self.usdkrw_onetime_log = OneTimeLog('USDKRW quote is ready.')
+        self.cnykrw_onetime_log = OneTimeLog('CNYKRW quote is ready.')
 
     def update(self):
         btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
@@ -254,18 +261,24 @@ class MonitorEnterChance(StateAbstract):
         usdkrw_quote = QuoteBoard().get_trade_quote(USDKRW_WEBSERVICEX_CURRENCY)
         cnykrw_quote = QuoteBoard().get_trade_quote(CNYKRW_WEBSERVICEX_CURRENCY)
 
-        if not btcchina_quote:
-            return self
-        if not bitstamp_quote:
-            return self
-        if not korbit_quote:
-            return self
-        if not usdkrw_quote:
-            return self
-        if not cnykrw_quote:
-            return self
+        if btcchina_quote:
+            self.btcchina_onetime_log.check()
 
-        self.info('quote is ready.')
+        if bitstamp_quote:
+            self.bitstamp_onetime_log.check()
+
+        if korbit_quote:
+            self.korbit_onetime_log.check()
+
+        if usdkrw_quote:
+            self.usdkrw_onetime_log.check()
+
+        if cnykrw_quote:
+            self.cnykrw_onetime_log.check()
+
+        if btcchina_quote and bitstamp_quote and korbit_quote and usdkrw_quote \
+                and cnykrw_quote:
+            self.info('data is ready.')
 
         # TODO
         return self
@@ -316,7 +329,7 @@ class Coward(StrategyAbstract):
         super(Coward, self).__init__()
         self.usd_to_krw = CurrencyConverter(USDKRW_WEBSERVICEX_CURRENCY)
         self.cny_to_krw = CurrencyConverter(CNYKRW_WEBSERVICEX_CURRENCY)
-        self.state = MonitorEnterChance(self)
+        self.state = CowardMonitorEnterChance(self)
 
     def run(self):
         self.state = self.state.update()
