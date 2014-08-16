@@ -101,13 +101,13 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
         if quote_type == 'trade':
             q = TradeQuote()
             q.parse(json_quote)
-            self.info(str(q))
+            #self.info(str(q))
             with self._lock:
                 self.trade_quotes[q.ticker] = q
         elif quote_type == 'quote':
             q = Quote()
             q.parse(json_quote)
-            self.info(str(q))
+            #self.info(str(q))
             with self._lock:
                 self.quotes[q.ticker] = q
 
@@ -118,7 +118,7 @@ class QuoteBoard(LoggableMixin, SingletonMixin):
         return None
 
     def get_quote(self, ticker):
-        with self.lock:
+        with self._lock:
             if ticker in self.quotes:
                 return self.quotes[ticker]
         return None
@@ -250,16 +250,21 @@ class BtcMarketMaker(IStrategy):
         btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
         bitstamp_quote = QuoteBoard().get_quote(BTCUSD_BITSTAMP_CURRENCY)
         korbit_quote = QuoteBoard().get_quote(BTCKRW_KORBIT_CURRENCY)
+        usdkrw_quote = QuoteBoard().get_trade_quote(USDKRW_WEBSERVICEX_CURRENCY)
+        cnykrw_quote = QuoteBoard().get_trade_quote(CNYKRW_WEBSERVICEX_CURRENCY)
 
-        # for testing
-        if btcchina_quote:
-            self.info(btcchina_quote)
+        if not btcchina_quote:
+            return
+        if not bitstamp_quote:
+            return
+        if not korbit_quote:
+            return
+        if not usdkrw_quote:
+            return
+        if not cnykrw_quote:
+            return
 
-        if bitstamp_quote:
-            self.info(bitstamp_quote)
-
-        if korbit_quote:
-            self.info(korbit_quote)
+        # TODO
 
     def _set_state(self, new_state):
         self.cur_state = new_state
@@ -276,7 +281,7 @@ class StrategyManager(LoggableMixin, SingletonMixin):
     def run(self):
         qp = QuoteProducer()
         qp.quote_subscribers.append(QuoteBoard())
-        qp.run()
+        qp.start()
 
         while True:
             time.sleep(1)
