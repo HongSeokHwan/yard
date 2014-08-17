@@ -207,9 +207,9 @@ class Book(LoggableMixin):
         pass
 
 
-class StrategyAbstract(LoggableMixin):
+class AbstractStrategy(LoggableMixin):
     def __init__(self):
-        super(StrategyAbstract, self).__init__()
+        super(AbstractStrategy, self).__init__()
 
     def run(self):
         pass
@@ -233,16 +233,16 @@ class CurrencyConverter(LoggableMixin):
         return None
 
 
-class StateAbstract(LoggableMixin):
+class AbstractState(LoggableMixin):
     def __init__(self):
-        super(StateAbstract, self).__init__()
+        super(AbstractState, self).__init__()
 
     def update(self):
         self.warn('update should be overided')
         return None
 
 
-class CowardMonitorEnterChance(StateAbstract):
+class CowardMonitorEnterChance(AbstractState):
     def __init__(self, parent):
         super(CowardMonitorEnterChance, self).__init__()
         self.parent = parent
@@ -284,7 +284,7 @@ class CowardMonitorEnterChance(StateAbstract):
         return self
 
 
-class CowardEntering(StateAbstract):
+class CowardEntering(AbstractState):
     def __init__(self, parent):
         super(CowardEntering, self).__init__()
         self.parent = parent
@@ -295,7 +295,7 @@ class CowardEntering(StateAbstract):
         return self
 
 
-class CowardMonitorExitChance(StateAbstract):
+class CowardMonitorExitChance(AbstractState):
     def __init__(self, parent):
         super(CowardMonitorExitChance, self).__init__()
         self.parent = parent
@@ -306,7 +306,7 @@ class CowardMonitorExitChance(StateAbstract):
         return self
 
 
-class CowardCanceling(StateAbstract):
+class CowardCanceling(AbstractState):
     def __init__(self, parent):
         super(CowardCanceling, self).__init__()
         self.parent = parent
@@ -317,7 +317,7 @@ class CowardCanceling(StateAbstract):
         return self
 
 
-class Coward(StrategyAbstract):
+class Coward(AbstractStrategy):
     State = Enum(
         'MONITOR_ENTER_CHANCE',
         'ENTERING',
