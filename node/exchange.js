@@ -234,8 +234,8 @@ var KorbitExchange = exports.KorbitExchange = function (options) {
   PollingExchange.call(this, _.defaults({
     quotePollUrl: 'https://api.korbit.co.kr/v1/orderbook',
     tradePollUrl: 'https://api.korbit.co.kr/v1/transactions',
-    quotePollConcurrency: 2,
-    tradePollConcurrency: 2
+    quotePollConcurrency: 5,
+    tradePollConcurrency: 5
   }, options));
 
   this.ticker = config.tickers['korbit'];
