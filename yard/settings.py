@@ -173,8 +173,7 @@ BRIDGE_SERVER_HOST = 'localhost'
 BRIDGE_SERVER_PORT = 9000
 
 
-# Market info
-# exchange: { ticker: { infos } }
+# Tickers
 # ----
 
 BTCUSD_BITSTAMP_CURRENCY = 'BTCUSD_BITSTAMP_CURRENCY'
@@ -186,30 +185,37 @@ USDKRW_WEBSERVICEX_CURRENCY = 'USDKRW_WEBSERVICEX_CURRENCY'
 CNYKRW_WEBSERVICEX_CURRENCY = 'CNYKRW_WEBSERVICEX_CURRENCY'
 USDCNY_WEBSERVICEX_CURRENCY = 'USDCNY_WEBSERVICEX_CURRENCY'
 
+
+# Exchanges
+# ----
+
+KORBIT = 'KORBIT'
+ICBIT = 'ICBIT'
+BITSTAMP = 'BITSTAMP'
+
+
+# Instrument info
+# ----
+
 MARKET_INFO = {
     BTCUSD_BITSTAMP_CURRENCY: {
         'code': '',
-        'type': 'currency',
         'description': 'bitstamp bitcoin usd base currency',
     },
     BTCKRW_KORBIT_CURRENCY: {
         'code': '',
-        'type': 'currency',
         'description': 'korbit bitcoin krw base currency',
     },
     BTCCNY_BTCCHINA_CURRENCY: {
         'code': '',
-        'type': 'currency',
         'description': 'btcchina bitcoin cny base currency',
     },
     BTCUSD_1409_ICBIT_FUTURES: {
         'code': 'BUU4',
-        'type': 'futures',
         'description': 'icbit bitcoin usd base futures',
     },
     BTCUSD_1412_ICBIT_FUTURES: {
         'code': 'BUZ4',
-        'type': 'futures',
         'description': 'icbit bitcoin usd base futures',
     },
     USDKRW_WEBSERVICEX_CURRENCY: {
@@ -225,6 +231,17 @@ MARKET_INFO = {
 }
 
 BITCOIN_TICKERS = MARKET_INFO.keys()
+
+
+# account infos
+# -------------
+
+ACCOUNTS = {
+    'korbit_1': {
+        'exchange': KORBIT,
+        'account_id': '123456789',
+    },
+}
 
 
 # Local settings

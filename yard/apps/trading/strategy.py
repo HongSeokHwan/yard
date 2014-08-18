@@ -15,7 +15,13 @@ from yard.settings import (
     #BTCUSD_1409_ICBIT_FUTURES,
     #BTCUSD_1412_ICBIT_FUTURES,
     USDKRW_WEBSERVICEX_CURRENCY,
-    CNYKRW_WEBSERVICEX_CURRENCY)
+    CNYKRW_WEBSERVICEX_CURRENCY,
+    ACCOUNTS)
+
+
+class OrderBridgeStub(LoggableMixin, SingletonMixin):
+    def __init__(self):
+        super(OrderBridgeStub, self).__init__()
 
 
 class QuoteProducer(LoggableMixin, SingletonMixin, threading.Thread):
@@ -160,11 +166,11 @@ class OrderManager(LoggableMixin, SingletonMixin):
 
 
 class Account(LoggableMixin):
-    def __init__(self, name, market, currency):
+    def __init__(self, account_info):
         super(Account, self).__init__()
-        self.name = name
-        self.market = market
-        self.currency = currency
+        self.account_id = account_info['account_id']
+        self.exchange = account_info['exchange']
+
         self.deposit = 0.0
         self.sellable_btc_quantity = 0.0
         self.order_board = {}
@@ -187,7 +193,22 @@ class Account(LoggableMixin):
 
 
 class AccountManager(LoggableMixin):
-    pass
+    def __init__(self):
+        super(AccountManager, self).__init__()
+        # ACCOUNTS = {
+        # 'korbit_1': { 'exchange': KORBIT, 'account_id': '123456789', }, }
+        self.accounts = self._load_accounts()
+
+    def get_account(self, account_id):
+        if account_id in self.accounts:
+            return self.accounts[account_id]
+        self.info('Account (%s) is not exist' % account_id)
+        return None
+
+    def _load_accounts(self):
+        for account_info in ACCOUNTS:
+            a = Account(account_info)
+            self.accounts.append(a)
 
 
 class Book(LoggableMixin):
@@ -354,14 +375,6 @@ class StrategyManager(LoggableMixin, SingletonMixin):
                 v.run()
 
 
-class StrategyRunner(LoggableMixin, SingletonMixin):
-    def start(self):
-        self.info('Start running')
-        StrategyManager().register_strategy(
-            'coward', Coward())
-        StrategyManager().run()
-
-
 # TODO implement me.
 class SpreadCalculator(LoggableMixin):
     def __init__(self, monitor_code, target_code, currency_code):
@@ -374,3 +387,10 @@ class SpreadCalculator(LoggableMixin):
     def update(self):
         qb = QuoteBoard()
         pass
+
+
+class StrategyRunner(LoggableMixin, SingletonMixin):
+    def start(self):
+        self.info('Start running')
+        StrategyManager().register_strategy('coward', Coward())
+        StrategyManager().run()
