@@ -18,7 +18,6 @@ var ExchangeManager = function () {
 };
 
 ExchangeManager.prototype.subscribe = function (session, exchange) {
-
   var self = this;
   var exchanges = exchange ? [exchange] : Object.keys(self._exchangeFactories);
   exchanges.forEach(function (exchange) {
@@ -54,7 +53,8 @@ ExchangeManager.prototype._ensureExchange = function (exchange) {
 ExchangeManager.prototype._createExchange = function (exchange) {
   logger.info('Creating exchange: `%s`', exchange);
   instance = new (this._exchangeFactories[exchange])()
-  instance.subscribe(this._onTick.bind(this, exchange));
+  instance.on('tick', this._onTick.bind(this, exchange));
+  instance.start();
   return instance
 };
 
