@@ -166,8 +166,9 @@ class OrderManager(LoggableMixin, SingletonMixin):
 
 
 class Account(LoggableMixin):
-    def __init__(self, account_info):
+    def __init__(self, account_name, account_info):
         super(Account, self).__init__()
+        self.account_name = account_name
         self.account_id = account_info['account_id']
         self.exchange = account_info['exchange']
 
@@ -199,16 +200,18 @@ class AccountManager(LoggableMixin):
         # 'korbit_1': { 'exchange': KORBIT, 'account_id': '123456789', }, }
         self.accounts = self._load_accounts()
 
-    def get_account(self, account_id):
-        if account_id in self.accounts:
-            return self.accounts[account_id]
-        self.info('Account (%s) is not exist' % account_id)
+    def get_account(self, account_name):
+        if account_name in self.accounts:
+            return self.accounts[account_name]
+        self.info('Account (%s) is not exist' % account_name)
         return None
 
     def _load_accounts(self):
-        for account_info in ACCOUNTS:
-            a = Account(account_info)
-            self.accounts.append(a)
+        accounts = {}
+        for account_name, account_info in ACCOUNTS.items():
+            a = Account(account_name, account_info)
+            accounts[account_name] = a
+        return accounts
 
 
 class Book(LoggableMixin):
@@ -275,32 +278,40 @@ class CowardMonitorEnterChance(AbstractState):
         self.usdkrw_onetime_log = OneTimeLog('USDKRW quote is ready.')
         self.cnykrw_onetime_log = OneTimeLog('CNYKRW quote is ready.')
 
-    def update(self):
-        btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
-        bitstamp_quote = QuoteBoard().get_quote(BTCUSD_BITSTAMP_CURRENCY)
-        korbit_quote = QuoteBoard().get_quote(BTCKRW_KORBIT_CURRENCY)
-        usdkrw_quote = QuoteBoard().get_trade_quote(USDKRW_WEBSERVICEX_CURRENCY)
-        cnykrw_quote = QuoteBoard().get_trade_quote(CNYKRW_WEBSERVICEX_CURRENCY)
+        self.btcchina_quote = None
+        self.bitstamp_quote = None
+        self.korbit_quote = None
+        self.usdkrw_quote = None
+        self.cnykrw_quote = None
 
-        if btcchina_quote:
+    def _ready_data(self):
+        self.btcchina_quote = QuoteBoard().get_quote(BTCCNY_BTCCHINA_CURRENCY)
+        self.bitstamp_quote = QuoteBoard().get_quote(BTCUSD_BITSTAMP_CURRENCY)
+        self.korbit_quote = QuoteBoard().get_quote(BTCKRW_KORBIT_CURRENCY)
+        self.usdkrw_quote = QuoteBoard().get_trade_quote(
+            USDKRW_WEBSERVICEX_CURRENCY)
+        self.cnykrw_quote = QuoteBoard().get_trade_quote(
+            CNYKRW_WEBSERVICEX_CURRENCY)
+
+        if self.btcchina_quote:
             self.btcchina_onetime_log.check()
-
-        if bitstamp_quote:
+        if self.bitstamp_quote:
             self.bitstamp_onetime_log.check()
-
-        if korbit_quote:
+        if self.korbit_quote:
             self.korbit_onetime_log.check()
-
-        if usdkrw_quote:
+        if self.usdkrw_quote:
             self.usdkrw_onetime_log.check()
-
-        if cnykrw_quote:
+        if self.cnykrw_quote:
             self.cnykrw_onetime_log.check()
 
-        if btcchina_quote and bitstamp_quote and korbit_quote and usdkrw_quote \
-                and cnykrw_quote:
-            self.info('data is ready.')
+        if self.btcchina_quote and self.bitstamp_quote and self.korbit_quote \
+                and self.usdkrw_quote and self.cnykrw_quote:
+            return True
+        return False
 
+    def update(self):
+        if not self._ready_data():
+            return self
         # TODO
         return self
 
