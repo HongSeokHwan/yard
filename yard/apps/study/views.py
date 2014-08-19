@@ -48,7 +48,6 @@ def _get_ps_result():
 def _get_df_result():
     p = subprocess.Popen(['df', '-h'], stdout=PIPE)
     result = p.communicate()[0]
-    print result
     return result
 
 
