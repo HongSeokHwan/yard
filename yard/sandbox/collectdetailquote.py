@@ -7,6 +7,15 @@ import datetime
 import urllib2
 import MySQLdb as mdb
 import xml.etree.ElementTree as ET
+import logging
+
+
+logger = logging.getLogger('collectdetailquote')
+handler = logging.FileHandler('collectdetailquote.log')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 ICBIT_CODE_1409 = 'BUU4'
@@ -75,7 +84,7 @@ class Quote:
             return True
 
         except Exception, e:
-            print str(e)
+            logger.error(str(e))
             return False
 
     def bitstamp_to_quote(self, bitstamp_quote):
@@ -96,7 +105,7 @@ class Quote:
             return True
 
         except Exception, e:
-            print str(e)
+            logger.error(str(e))
             return False
 
     def currency_to_quote(self, code, quote):
@@ -122,7 +131,7 @@ class Quote:
             return True
 
         except Exception, e:
-            print str(e)
+            logger.error(str(e))
             return False
 
     def icbit_to_quote(self, code, icbit_quote):
@@ -144,46 +153,45 @@ class Quote:
             return True
 
         except Exception, e:
-            print str(e)
+            logger.error(str(e))
             return False
 
     def create_query(self, dt):
         bid_price_str = Quote.ten_array_template_with_comma % (
-                self.bid_prices[0], self.bid_prices[1],
-                self.bid_prices[2], self.bid_prices[3],
-                self.bid_prices[4], self.bid_prices[5],
-                self.bid_prices[6], self.bid_prices[7],
-                self.bid_prices[8], self.bid_prices[9])
+            self.bid_prices[0], self.bid_prices[1],
+            self.bid_prices[2], self.bid_prices[3],
+            self.bid_prices[4], self.bid_prices[5],
+            self.bid_prices[6], self.bid_prices[7],
+            self.bid_prices[8], self.bid_prices[9])
 
         ask_price_str = Quote.ten_array_template_with_comma % (
-                self.ask_prices[0], self.ask_prices[1],
-                self.ask_prices[2], self.ask_prices[3],
-                self.ask_prices[4], self.ask_prices[5],
-                self.ask_prices[6], self.ask_prices[7],
-                self.ask_prices[8], self.ask_prices[9])
+            self.ask_prices[0], self.ask_prices[1],
+            self.ask_prices[2], self.ask_prices[3],
+            self.ask_prices[4], self.ask_prices[5],
+            self.ask_prices[6], self.ask_prices[7],
+            self.ask_prices[8], self.ask_prices[9])
 
         bid_quantity_str = Quote.ten_array_template_with_comma % (
-                self.bid_quantities[0], self.bid_quantities[1],
-                self.bid_quantities[2], self.bid_quantities[3],
-                self.bid_quantities[4], self.bid_quantities[5],
-                self.bid_quantities[6], self.bid_quantities[7],
-                self.bid_quantities[8], self.bid_quantities[9])
+            self.bid_quantities[0], self.bid_quantities[1],
+            self.bid_quantities[2], self.bid_quantities[3],
+            self.bid_quantities[4], self.bid_quantities[5],
+            self.bid_quantities[6], self.bid_quantities[7],
+            self.bid_quantities[8], self.bid_quantities[9])
 
         ask_quantity_str = Quote.ten_array_template_without_comma % (
-                self.ask_quantities[0], self.ask_quantities[1],
-                self.ask_quantities[2], self.ask_quantities[3],
-                self.ask_quantities[4], self.ask_quantities[5],
-                self.ask_quantities[6], self.ask_quantities[7],
-                self.ask_quantities[8], self.ask_quantities[9])
+            self.ask_quantities[0], self.ask_quantities[1],
+            self.ask_quantities[2], self.ask_quantities[3],
+            self.ask_quantities[4], self.ask_quantities[5],
+            self.ask_quantities[6], self.ask_quantities[7],
+            self.ask_quantities[8], self.ask_quantities[9])
 
         query = Quote.query_template % (
-                dt, self.code,
-                bid_price_str,
-                ask_price_str,
-                bid_quantity_str,
-                ask_quantity_str)
-
-        #print 'query', query
+            dt,
+            self.code,
+            bid_price_str,
+            ask_price_str,
+            bid_quantity_str,
+            ask_quantity_str)
         return query
 
     def to_database(self, con, dt):
@@ -213,7 +221,7 @@ def parse_currency_value(content):
 
 
 def _main(con):
-    print 'start collectdetailquote.'
+    logger.info('start collectdetailquote.')
 
     # futures data
     raw_icbit_quote_1409 = get_quote(ICBIT_URL_TEMPLATE % ICBIT_CODE_1409)
@@ -273,7 +281,7 @@ def _main(con):
     krwcny_quote.to_database(con, dt)
     cnykrw_quote.to_database(con, dt)
 
-    print 'end get quote and insert into db.', now
+    logger.info('end get quote and insert into db. (%s)' % now)
     time.sleep(30)
 
 
