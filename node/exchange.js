@@ -280,7 +280,7 @@ var WebserviceExchange = exports.WebserviceExchange = function () {
 
   this.tradePollUrlTmpl = 'http://www.webservicex.net/CurrencyConvertor.asmx/'
                           + 'ConversionRate?FromCurrency=%s&ToCurrency=%s';
-  this.tradePollConcurrency = 2;
+  this.tradePollConcurrency = 1;
 };
 
 util.inherits(WebserviceExchange, Exchange);

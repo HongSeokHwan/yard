@@ -11,8 +11,7 @@ var ExchangeManager = function () {
 
   Object.keys(exchange).forEach(function (key) {
     var value = exchange[key];
-    if (value.prototype instanceof exchange.Exchange) {
-      //if(value.exchangeCode != 'usdcny') return; // FIXME
+    if (value.prototype instanceof exchange.Exchange && value.exchangeCode) {
       self._exchangeFactories[value.exchangeCode] = value;
     }
   });
