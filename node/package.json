@@ -1,7 +1,17 @@
 {
   "name": "bridge",
   "version": "0.0.1",
-  "dependencies": {},
+  "dependencies": {
+    "crypto-js": "^3.1.2-5",
+    "deep-equal": "^0.2.1",
+    "libxmljs": "^0.11.0",
+    "request": "^2.40.0",
+    "socket.io-client": "^1.0.6",
+    "underscore": "^1.6.0",
+    "winston": "^0.7.3",
+    "ws": "^0.4.32",
+    "xml2js": "^0.4.4"
+  },
   "description": "bridge",
   "main": "bridge.js",
   "devDependencies": {},
