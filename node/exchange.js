@@ -5,6 +5,7 @@ var equal = require('deep-equal');
 var request = require('request');
 var io = require('socket.io-client');
 var ws = require('ws');
+var xml = require("libxmljs");
 var config = require('./config');
 var logger = require('./logger');
 
@@ -82,7 +83,7 @@ util.inherits(Exchange, events.EventEmitter);
 // Bitstamp
 // --------
 
-var BitstampExchange = exports.BitstampExchange = function (options) {
+var BitstampExchange = exports.BitstampExchange = function () {
   Exchange.call(this);
 
   this.url = 'wss://ws.pusherapp.com/app/de504dc5763aeef9ff52?protocol=7\
@@ -147,7 +148,7 @@ BitstampExchange.exchangeCode = 'bitstamp';
 // Btcchina
 // --------
 
-var BtcchinaExchange = exports.BtcchinaExchange = function (options) {
+var BtcchinaExchange = exports.BtcchinaExchange = function () {
   Exchange.call(this);
 
   this.quotePollUrl = 'https://data.btcchina.com/data/orderbook?market=btccny&limit=10';
@@ -216,7 +217,7 @@ BtcchinaExchange.exchangeCode = 'btcchina';
 // Korbit
 // ------
 
-var KorbitExchange = exports.KorbitExchange = function (options) {
+var KorbitExchange = exports.KorbitExchange = function () {
   Exchange.call(this);
 
   this.quotePollUrl = 'https://api.korbit.co.kr/v1/orderbook';
@@ -269,3 +270,90 @@ KorbitExchange.prototype.normalizeTrade = function (tick) {
 };
 
 KorbitExchange.exchangeCode = 'korbit';
+
+
+// Webservice
+// ------
+
+var WebserviceExchange = exports.WebserviceExchange = function () {
+  Exchange.call(this);
+
+  this.tradePollUrlTmpl = 'http://www.webservicex.net/CurrencyConvertor.asmx/'
+                          + 'ConversionRate?FromCurrency=%s&ToCurrency=%s';
+  this.tradePollConcurrency = 2;
+};
+
+util.inherits(WebserviceExchange, Exchange);
+
+WebserviceExchange.prototype.start = function () {
+  var url = util.format(this.tradePollUrlTmpl, this.fromCurrency,
+                        this.toCurrency);
+  (new Poller({
+    label: util.format('%s %s', this.exchangeCode, 'trade'),
+    url: url,
+    concurrency: this.tradePollConcurrency,
+    serializer: function (raw) {
+      var doc = xml.parseXml(raw);
+      return doc.root().childNodes()[0].text();
+    },
+    normalizer: this.normalizeTrade.bind(this)
+  })).on('tick', this.emit.bind(this, 'tick', 'trade')).start();
+};
+
+WebserviceExchange.prototype.normalizeTrade = function (tick) {
+  if (!tick) {
+    return;
+  }
+  return {
+    ticker: this.ticker,
+    price: tick
+  }
+};
+
+
+// UsdToKrw
+// --------
+
+var UsdToKrwExchange = exports.UsdToKrwExchange = function () {
+  WebserviceExchange.call(this);
+
+  this.fromCurrency = 'USD';
+  this.toCurrency = 'KRW';
+  this.ticker = config.tickers['usdkrw'];
+};
+
+util.inherits(UsdToKrwExchange, WebserviceExchange);
+
+UsdToKrwExchange.exchangeCode = 'usdkrw';
+
+
+// CnyToKrw
+// --------
+
+var CnyToKrwExchange = exports.CnyToKrwExchange = function () {
+  WebserviceExchange.call(this);
+
+  this.fromCurrency = 'CNY';
+  this.toCurrency = 'KRW';
+  this.ticker = config.tickers['cnykrw'];
+};
+
+util.inherits(CnyToKrwExchange, WebserviceExchange);
+
+CnyToKrwExchange.exchangeCode = 'cnykrw';
+
+
+// UsdToCny
+// --------
+
+var UsdToCnyExchange = exports.UsdToCnyExchange = function () {
+  WebserviceExchange.call(this);
+
+  this.fromCurrency = 'USD';
+  this.toCurrency = 'CNY';
+  this.ticker = config.tickers['usdcny'];
+};
+
+util.inherits(UsdToCnyExchange, WebserviceExchange);
+
+UsdToCnyExchange.exchangeCode = 'usdcny';

@@ -12,7 +12,7 @@ var ExchangeManager = function () {
   Object.keys(exchange).forEach(function (key) {
     var value = exchange[key];
     if (value.prototype instanceof exchange.Exchange) {
-      //if(value.exchangeCode != 'btcchina') return; // FIXME
+      //if(value.exchangeCode != 'usdcny') return; // FIXME
       self._exchangeFactories[value.exchangeCode] = value;
     }
   });
