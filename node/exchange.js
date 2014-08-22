@@ -48,19 +48,19 @@ Poller.prototype._poll = function () {
         raw = self.serializer(body);
       } catch (e) {
         logger.error(util.format('Failed to serialize %s', body) + e);
-        return;
       }
 
-      tick = self.normalizer(raw);
-      if (!tick) {
-        return;
+      if (raw) {
+        tick = self.normalizer(raw);
       }
 
-      if (!self.last || self.comparator(tick, self.last)) {
-        first = !self.last;
-        self.last = tick;
-        if (!self.skipFirst || !first) {
-          self.emit('tick', tick);
+      if (tick) {
+        if (!self.last || self.comparator(tick, self.last)) {
+          first = !self.last;
+          self.last = tick;
+          if (!self.skipFirst || !first) {
+            self.emit('tick', tick);
+          }
         }
       }
 
