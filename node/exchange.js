@@ -1,6 +1,7 @@
 var events = require('events');
 var util = require('util');
 var _ = require('underscore');
+var CryptoJS = require('crypto-js');
 var equal = require('deep-equal');
 var request = require('request');
 var io = require('socket.io-client');
@@ -20,10 +21,12 @@ var Poller = function (options) {
   this.url = options.url;
   this.serializer = options.serializer || JSON.parse;
   this.normalizer = options.normalizer || function (tick) { return tick; };
-  this.concurrency = options.concurrency || 1;
+  this.concurrency = options.concurrency === undefined ? 1 : options.concurrency;
+  this.skipFirst = options.skipFirst === undefined ? true : options.skipFirst;
   this.comparator = options.comparator
                     || function (new_, old) { return !equal(new_, old); }
   this.label = options.label || 'Poller';
+
   this.last = null;
 };
 
@@ -49,7 +52,9 @@ Poller.prototype._poll = function () {
       if (!self.last || self.comparator(tick, self.last)) {
         first = !self.last;
         self.last = tick;
-        !first && self.emit('tick', tick);
+        if (!self.skipFirst || !first) {
+          self.emit('tick', tick);
+        }
       }
 
       poll();
@@ -214,6 +219,108 @@ BtcchinaExchange.prototype.normalizeTrade = function (tick) {
 BtcchinaExchange.exchangeCode = 'btcchina';
 
 
+// Icbit
+// --------
+
+var IcbitExchange = exports.IcbitExchange = function () {
+  Exchange.call(this);
+
+  this.targets = Object.keys(config.tickers.icbit);
+
+  // For polling
+  this.quotePollUrlTmpl = 'https://api.icbit.se/api/orders/book?ticker=%s'
+  this.quotePollConcurrency = 2;
+
+  // For streaming
+  this.streamUrlTmpl = 'https://api.icbit.se/icbit?key=%s&signature=%s&nonce=%s';
+  this.user = config.icbitUser;
+  this.key = config.icbitKey;
+  this.secret = config.icbitSecret;
+};
+
+util.inherits(IcbitExchange, Exchange);
+
+IcbitExchange.prototype._buildUrl = function () {
+  var tmpl = this.streamUrlTmpl;
+  var user = this.user;
+  var key = this.key;
+  var secret = this.secret;
+  var nonce = Math.round(new Date().getTime() / 1000);
+  var signature = CryptoJS.HmacSHA256(nonce + user + key, secret).toString(
+    CryptoJS.enc.Hex).toUpperCase();
+  return util.format(tmpl, key, signature, nonce);
+};
+
+IcbitExchange.prototype.start = function () {
+  var self = this;
+
+  // Polling
+  self.targets.forEach(function (target) {
+    var url = util.format(self.quotePollUrlTmpl, target);
+    (new Poller({
+      label: util.format('%s %s (%s)', self.exchangeCode, 'quote', target),
+      url: url,
+      concurrency: self.quotePollConcurrency,
+      normalizer: self.normalizeQuote.bind(self)
+    })).on('tick', self.emit.bind(self, 'tick', 'quote')).start();
+  });
+
+  // Streaming
+  var url = this._buildUrl();
+  var socket = io.connect(url);
+  socket.on('connect', function () {
+    console.log('connected');
+    socket.emit('message', {
+      'op': 'subscribe',
+      'channel': 'orderbook_BUU4'
+    });
+    socket.emit('subscribe', {
+      'channel': 'orderbook_BUU4'
+    });
+  });
+  socket.on('disconnect', function () {
+    console.log('disconnected');
+  });
+  socket.on('error', function (raw) {
+    console.log('error');
+    console.log(raw);
+  });
+  socket.on('message', function (raw) {
+    console.log('message');
+    console.log(raw);
+  });
+};
+
+IcbitExchange.prototype.normalizeQuote = function (tick) {
+  if (!tick || !('buy' in tick) || !('sell' in tick)) {
+    return;
+  }
+  var convertToArray = function (entry) {
+    return [entry.p.toString(), entry.q.toString()];
+  };
+
+  return {
+    ticker: config.tickers.icbit[tick['s']],
+    asks: _.map(tick['sell'], convertToArray),
+    bids: _.map(tick['buy'], convertToArray)
+  };
+};
+
+IcbitExchange.prototype.normalizeTrade = function (tick) {
+  if (!tick) {
+    return;
+  }
+  return {
+    ticker: this.ticker,
+    id: trade['id'],
+    price: trade['price'],
+    quantity: trade['amount']
+  }
+};
+
+IcbitExchange.exchangeCode = 'icbit';
+
+
 // Korbit
 // ------
 
@@ -293,8 +400,13 @@ WebserviceExchange.prototype.start = function () {
     url: url,
     concurrency: this.tradePollConcurrency,
     serializer: function (raw) {
-      var doc = xml.parseXml(raw);
-      return doc.root().childNodes()[0].text();
+      try {
+        var doc = xml.parseXml(raw);
+        return doc.root().childNodes()[0].text();
+      } catch (e) {
+        logger.error('Failed to parse XML: ' + e);
+        return null;
+      }
     },
     normalizer: this.normalizeTrade.bind(this)
   })).on('tick', this.emit.bind(this, 'tick', 'trade')).start();
