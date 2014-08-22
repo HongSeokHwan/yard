@@ -42,8 +42,15 @@ Poller.prototype._poll = function () {
     logger.debug('Polling %s', self.label);
 
     request(self.url, function (error, response, body) {
-      // TODO: Error handling
-      raw = self.serializer(body);
+      var raw, tick, first;
+
+      try {
+        raw = self.serializer(body);
+      } catch (e) {
+        logger.error(util.format('Failed to serialize %s', body) + e);
+        return;
+      }
+
       tick = self.normalizer(raw);
       if (!tick) {
         return;

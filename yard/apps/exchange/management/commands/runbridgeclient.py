@@ -9,4 +9,8 @@ class Command(LoggableMixin, BaseCommand):
 
     def handle(self, *args, **options):
         for tick in subscribe():
-            self.info(tick)
+            data = tick['data']
+            self.info('{exchange:<10} {type:<6} {ticker:<10}'.format(
+                type=tick['type'], exchange=data['exchange'],
+                ticker=data['tick']['ticker']))
+            self.debug(tick)
