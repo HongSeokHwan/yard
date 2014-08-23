@@ -132,7 +132,7 @@ BitstampExchange.prototype.start = function () {
 
 BitstampExchange.prototype.normalizeQuote = function (tick) {
   if (!tick || !('bids' in tick) || !('asks' in tick)) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
@@ -143,9 +143,12 @@ BitstampExchange.prototype.normalizeQuote = function (tick) {
 
 BitstampExchange.prototype.normalizeTrade = function (tick) {
   if (!tick) {
-    return;
+    return null;
   }
   trade = util.isArray(tick) ? tick[0] : tick;
+  if (!trade) {
+    return null;
+  }
   return {
     ticker: this.ticker,
     id: trade['id'],
@@ -199,7 +202,7 @@ BtcchinaExchange.prototype.start = function () {
 
 BtcchinaExchange.prototype.normalizeQuote = function (tick) {
   if (!tick || !('bids' in tick) || !('asks' in tick)) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
@@ -211,7 +214,7 @@ BtcchinaExchange.prototype.normalizeQuote = function (tick) {
 
 BtcchinaExchange.prototype.normalizeTrade = function (tick) {
   if (!tick) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
@@ -300,7 +303,7 @@ IcbitExchange.prototype.start = function () {
 
 IcbitExchange.prototype.normalizeQuote = function (tick) {
   if (!tick || !('buy' in tick) || !('sell' in tick)) {
-    return;
+    return null;
   }
   var convertToArray = function (entry) {
     return [entry.p.toString(), entry.q.toString()];
@@ -315,7 +318,7 @@ IcbitExchange.prototype.normalizeQuote = function (tick) {
 
 IcbitExchange.prototype.normalizeTrade = function (tick) {
   if (!tick) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
@@ -361,7 +364,7 @@ KorbitExchange.prototype.start = function () {
 
 KorbitExchange.prototype.normalizeQuote = function (tick) {
   if (!tick || !('bids' in tick) || !('asks' in tick)) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
@@ -372,9 +375,12 @@ KorbitExchange.prototype.normalizeQuote = function (tick) {
 
 KorbitExchange.prototype.normalizeTrade = function (tick) {
   if (!tick) {
-    return;
+    return null;
   }
-  trade = tick[0];
+  trade = util.isArray(tick) ? tick[0] : tick;
+  if (!trade) {
+    return null;
+  }
   return {
     ticker: this.ticker,
     id: trade['tid'],
@@ -421,7 +427,7 @@ WebserviceExchange.prototype.start = function () {
 
 WebserviceExchange.prototype.normalizeTrade = function (tick) {
   if (!tick) {
-    return;
+    return null;
   }
   return {
     ticker: this.ticker,
